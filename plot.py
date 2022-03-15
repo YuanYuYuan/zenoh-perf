@@ -15,7 +15,7 @@ class MyArgParser(Tap):
     # output dir
     out_dir: Path = Path('./plots')
     # experiment name
-    exp_name: str = "z_put_thr + z_sub_thr"
+    exp_name: str = "t_pub_thr + t_sub_thr"
 
 
 def load_data(dir: str, exp_tag: str = None) -> pd.DataFrame:

@@ -11,25 +11,33 @@
 // Contributors:
 //   ADLINK zenoh team, <zenoh@adlink-labs.tech>
 //
-use async_std::sync::Arc;
-use async_std::task;
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::Duration;
-use structopt::StructOpt;
-use zenoh::net::link::EndPoint;
-use zenoh::net::protocol::core::{
-    whatami, Channel, CongestionControl, Priority, Reliability, ResKey,
+use async_std::{task, sync::Arc};
+use std::{
+    path::PathBuf,
+    sync::atomic::{AtomicUsize, Ordering},
+    time::Duration
 };
-use zenoh::net::protocol::io::ZBuf;
-use zenoh::net::protocol::proto::ZenohMessage;
-use zenoh::net::transport::{
-    DummyTransportPeerEventHandler, TransportEventHandler, TransportManager,
-    TransportManagerConfig, TransportMulticast, TransportMulticastEventHandler, TransportPeer,
-    TransportPeerEventHandler, TransportUnicast,
+use zenoh::net::{
+    link::EndPoint,
+    protocol::{
+        io::ZBuf,
+        proto::ZenohMessage,
+        core::{
+            Channel, CongestionControl, Priority, Reliability,
+        }
+    },
+    transport::{
+        DummyTransportPeerEventHandler, TransportEventHandler, TransportManager,
+        TransportMulticast, TransportMulticastEventHandler, TransportPeer,
+        TransportPeerEventHandler, TransportUnicast,
+    }
 };
-use zenoh_util::core::ZResult;
-use zenoh_util::properties::{IntKeyProperties, Properties};
+use zenoh_core::zresult::ZResult;
+use zenoh::{
+    config::{WhatAmI, Config},
+    prelude::KeyExpr
+};
+use clap::Parser;
 
 struct MySH {}
 
@@ -56,18 +64,27 @@ impl TransportEventHandler for MySH {
     }
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "s_pub_thr")]
+#[derive(Debug, Parser)]
+#[clap(name = "s_pub_thr")]
 struct Opt {
-    #[structopt(short = "c", long = "connect")]
+    /// connect(s), e.g. --connect tcp/127.0.0.1:7447,tcp/127.0.0.1:7448
+    #[clap(short = 'c', long = "connect", value_delimiter = ',')]
     connect: Vec<EndPoint>,
-    #[structopt(short = "m", long = "mode")]
-    mode: String,
-    #[structopt(short = "p", long = "payload")]
+
+    /// peer, router, or client
+    #[clap(short, long)]
+    mode: WhatAmI,
+
+    /// payload size (bytes)
+    #[clap(short, long)]
     payload: usize,
-    #[structopt(short = "t", long = "print")]
+
+    /// print the counter
+    #[clap(short = 't', long)]
     print: bool,
-    #[structopt(long = "conf", parse(from_os_str))]
+
+    /// configuration file (json5 or yaml)
+    #[clap(long = "conf", parse(from_os_str))]
     config: Option<PathBuf>,
 }
 
@@ -77,28 +94,31 @@ async fn main() {
     env_logger::init();
 
     // Parse the args
-    let opt = Opt::from_args();
+    let Opt {
+        connect,
+        mode,
+        payload,
+        print,
+        config,
+    } = Opt::parse();
 
-    let whatami = whatami::parse(opt.mode.as_str()).unwrap();
-
-    let bc = match opt.config.as_ref() {
-        Some(f) => {
-            let config = async_std::fs::read_to_string(f).await.unwrap();
-            let properties = Properties::from(config);
-            let int_props = IntKeyProperties::from(properties);
-            TransportManagerConfig::builder()
-                .from_config(&int_props)
+    // Setup TransportManager
+    let builder = match config {
+        Some(path) => {
+            TransportManager::builder()
+                .from_config(&Config::from_file(path).unwrap())
                 .await
                 .unwrap()
         }
-        None => TransportManagerConfig::builder().whatami(whatami),
+        None => TransportManager::builder()
+            .whatami(mode)
     };
-    let config = bc.build(Arc::new(MySH::new()));
-    let manager = TransportManager::new(config);
+    let handler = Arc::new(MySH::new());
+    let manager = builder.build(handler).unwrap();
 
     // Connect to publisher
     let mut transports: Vec<TransportUnicast> = vec![];
-    for e in opt.connect.iter() {
+    for e in connect {
         let t = manager.open_transport_unicast(e.clone()).await.unwrap();
         transports.push(t);
     }
@@ -109,15 +129,15 @@ async fn main() {
         reliability: Reliability::Reliable,
     };
     let congestion_control = CongestionControl::Block;
-    let key = ResKey::RId(1);
+    let key = KeyExpr::from(1);
     let info = None;
-    let payload = ZBuf::from(vec![0u8; opt.payload]);
+    let payload = ZBuf::from(vec![0u8; payload]);
     let reply_context = None;
     let routing_context = None;
     let attachment = None;
 
     let count = Arc::new(AtomicUsize::new(0));
-    if opt.print {
+    if print {
         let c_count = count.clone();
         task::spawn(async move {
             loop {

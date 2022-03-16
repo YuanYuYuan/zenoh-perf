@@ -43,4 +43,5 @@ zenoh = { git = "https://github.com/eclipse-zenoh/zenoh.git", rev = "641ba35a60e
 zenoh-util = { git = "https://github.com/eclipse-zenoh/zenoh.git", rev = "641ba35a60e0d49f1aeecd854e5028ecde3da8ea" }
 zenoh-core = { git = "https://github.com/eclipse-zenoh/zenoh.git", rev = "641ba35a60e0d49f1aeecd854e5028ecde3da8ea" }
 zenoh-cfg-properties = { git = "https://github.com/eclipse-zenoh/zenoh.git", rev = "641ba35a60e0d49f1aeecd854e5028ecde3da8ea" }
+zenoh-protocol-core = { git = "https://github.com/eclipse-zenoh/zenoh.git", rev = "641ba35a60e0d49f1aeecd854e5028ecde3da8ea" }
 clap = { version = "3.1.5", features = ["derive"] }

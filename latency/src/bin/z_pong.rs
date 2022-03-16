@@ -57,18 +57,14 @@ async fn main() {
     config.scouting.multicast.set_enabled(Some(false)).unwrap();
 
     let session = zenoh::open(config).await.unwrap();
-    let mut sub = session
-        .subscribe("/test/ping/")
-        .reliable()
-        .await
-        .unwrap();
+    let mut sub = session.subscribe("/test/ping/").reliable().await.unwrap();
 
     while let Some(sample) = sub.next().await {
-                session
-                    .put("/test/pong", sample)
-                    .congestion_control(CongestionControl::Block)
-                    .await
-                    .unwrap();
+        session
+            .put("/test/pong", sample)
+            .congestion_control(CongestionControl::Block)
+            .await
+            .unwrap();
     }
 
     // Stop forever

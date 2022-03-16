@@ -11,32 +11,21 @@
 // Contributors:
 //   ADLINK zenoh team, <zenoh@adlink-labs.tech>
 //
-use async_std::{
-    future,
-    sync::Arc,
-    task,
-};
+use async_std::{future, sync::Arc, task};
+use clap::Parser;
 use std::{
     any::Any,
     path::PathBuf,
-    sync::atomic::{
-        AtomicBool,
-        AtomicUsize,
-        Ordering
-    },
-    time::{
-        Duration,
-        Instant
-    },
+    sync::atomic::{AtomicBool, AtomicUsize, Ordering},
+    time::{Duration, Instant},
 };
-use clap::Parser;
+use zenoh::config::{Config, WhatAmI};
 use zenoh::net::{
     link::{EndPoint, Link},
     protocol::proto::ZenohMessage,
     transport::*,
 };
 use zenoh_core::zresult::ZResult;
-use zenoh::config::{WhatAmI, Config};
 
 // Transport Handler for the peer
 struct MySH {
@@ -131,9 +120,9 @@ impl TransportPeerEventHandler for MyMH {
 #[derive(Debug, Parser)]
 #[clap(name = "s_sub_thr")]
 struct Opt {
-    /// endpoint(s), e.g. --endpoint tcp/127.0.0.1:7447,tcp/127.0.0.1:7448
+    /// locator(s), e.g. --locator tcp/127.0.0.1:7447,tcp/127.0.0.1:7448
     #[clap(short, long, value_delimiter = ',')]
-    endpoint: Vec<EndPoint>,
+    locator: Vec<EndPoint>,
 
     /// peer, router, or client
     #[clap(short, long)]
@@ -154,7 +143,6 @@ struct Opt {
     config: Option<PathBuf>,
 }
 
-
 #[async_std::main]
 async fn main() {
     // Enable logging
@@ -162,7 +150,7 @@ async fn main() {
 
     // Parse the args
     let Opt {
-        endpoint,
+        locator,
         mode,
         payload,
         name,
@@ -173,24 +161,21 @@ async fn main() {
     // Setup TransportManager
     let count = Arc::new(AtomicUsize::new(0));
     let builder = match config {
-        Some(path) => {
-            TransportManager::builder()
-                .from_config(&Config::from_file(path).unwrap())
-                .await
-                .unwrap()
-        }
-        None => TransportManager::builder()
-            .whatami(WhatAmI::Router)
+        Some(path) => TransportManager::builder()
+            .from_config(&Config::from_file(path).unwrap())
+            .await
+            .unwrap(),
+        None => TransportManager::builder().whatami(WhatAmI::Router),
     };
     let handler = Arc::new(MySH::new(scenario, name, payload, count));
     let manager = builder.build(handler).unwrap();
 
     if mode == WhatAmI::Peer {
-        for e in endpoint {
+        for e in locator {
             manager.add_listener(e.clone()).await.unwrap();
         }
     } else {
-        for e in endpoint {
+        for e in locator {
             let _t = manager.open_transport_unicast(e.clone()).await.unwrap();
         }
     }

@@ -14,16 +14,15 @@
 use async_std::stream::StreamExt;
 use async_std::sync::{Arc, Barrier, Mutex};
 use async_std::task;
+use clap::Parser;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
-use clap::Parser;
 use zenoh::config::Config;
 use zenoh::net::protocol::core::WhatAmI;
 use zenoh::net::protocol::io::reader::{HasReader, Reader};
 use zenoh::net::protocol::io::SplitBuffer;
 use zenoh::prelude::*;
 use zenoh::publication::CongestionControl;
-
 
 #[derive(Debug, Parser)]
 #[clap(name = "z_ping")]
@@ -80,24 +79,24 @@ async fn parallel(opt: Opt, config: Config) {
         c_barrier.wait().await;
 
         while let Some(sample) = sub.next().await {
-                  let mut payload_reader = sample.value.payload.reader();   
-                  let mut count_bytes = [0u8; 8];
-                  if payload_reader.read_exact(&mut count_bytes){
-                    let count = u64::from_le_bytes(count_bytes);
+            let mut payload_reader = sample.value.payload.reader();
+            let mut count_bytes = [0u8; 8];
+            if payload_reader.read_exact(&mut count_bytes) {
+                let count = u64::from_le_bytes(count_bytes);
 
-                    let instant = c_pending.lock().await.remove(&count).unwrap();
-                    println!(
-                        "zenoh,{},latency.parallel,{},{},{},{},{}",
-                        scenario,
-                        name,
-                        sample.value.payload.len(),
-                        interval,
-                        count,
-                        instant.elapsed().as_micros()
-                    );
-                }  else {
-                    panic!("Fail to fill the buffer");
-                }
+                let instant = c_pending.lock().await.remove(&count).unwrap();
+                println!(
+                    "zenoh,{},latency.parallel,{},{},{},{},{}",
+                    scenario,
+                    name,
+                    sample.value.payload.len(),
+                    interval,
+                    count,
+                    instant.elapsed().as_micros()
+                );
+            } else {
+                panic!("Fail to fill the buffer");
+            }
         }
         panic!("Invalid value!");
     });
@@ -131,11 +130,7 @@ async fn single(opt: Opt, config: Config) {
     let name = opt.name;
     let interval = opt.interval;
 
-    let mut sub = session
-        .subscribe("/test/pong/")
-        .reliable()
-        .await
-        .unwrap();
+    let mut sub = session.subscribe("/test/pong/").reliable().await.unwrap();
 
     let mut count: u64 = 0;
     loop {
@@ -150,27 +145,27 @@ async fn single(opt: Opt, config: Config) {
             .await
             .unwrap();
 
-        match sub.next().await{
+        match sub.next().await {
             Some(sample) => {
                 let mut payload_reader = sample.value.payload.reader();
                 let mut count_bytes = [0u8; 8];
                 if payload_reader.read_exact(&mut count_bytes) {
                     let s_count = u64::from_le_bytes(count_bytes);
 
-                println!(
-                    "zenoh,{},latency.sequential,{},{},{},{},{}",
-                    scenario,
-                    name,
-                    sample.value.payload.len(),
-                    interval,
-                    s_count,
-                    now.elapsed().as_micros()
-                );
-            } else {
-                panic!("Fail to fill the buffer");
+                    println!(
+                        "zenoh,{},latency.sequential,{},{},{},{},{}",
+                        scenario,
+                        name,
+                        sample.value.payload.len(),
+                        interval,
+                        s_count,
+                        now.elapsed().as_micros()
+                    );
+                } else {
+                    panic!("Fail to fill the buffer");
+                }
             }
-        }
-           _ => panic!("Invalid value"),
+            _ => panic!("Invalid value"),
         }
         task::sleep(Duration::from_secs_f64(opt.interval)).await;
         count += 1;

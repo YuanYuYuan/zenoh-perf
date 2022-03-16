@@ -11,33 +11,31 @@
 // Contributors:
 //   ADLINK zenoh team, <zenoh@adlink-labs.tech>
 //
-use async_std::{task, sync::Arc};
+use async_std::{sync::Arc, task};
+use clap::Parser;
 use std::{
     path::PathBuf,
     sync::atomic::{AtomicUsize, Ordering},
-    time::Duration
+    time::Duration,
 };
 use zenoh::net::{
     link::EndPoint,
     protocol::{
+        core::{Channel, CongestionControl, Priority, Reliability},
         io::ZBuf,
         proto::ZenohMessage,
-        core::{
-            Channel, CongestionControl, Priority, Reliability,
-        }
     },
     transport::{
         DummyTransportPeerEventHandler, TransportEventHandler, TransportManager,
         TransportMulticast, TransportMulticastEventHandler, TransportPeer,
         TransportPeerEventHandler, TransportUnicast,
-    }
+    },
+};
+use zenoh::{
+    config::{Config, WhatAmI},
+    prelude::KeyExpr,
 };
 use zenoh_core::zresult::ZResult;
-use zenoh::{
-    config::{WhatAmI, Config},
-    prelude::KeyExpr
-};
-use clap::Parser;
 
 struct MySH {}
 
@@ -67,9 +65,9 @@ impl TransportEventHandler for MySH {
 #[derive(Debug, Parser)]
 #[clap(name = "s_pub_thr")]
 struct Opt {
-    /// connect(s), e.g. --connect tcp/127.0.0.1:7447,tcp/127.0.0.1:7448
-    #[clap(short = 'c', long = "connect", value_delimiter = ',')]
-    connect: Vec<EndPoint>,
+    /// locator(s), e.g. --locator tcp/127.0.0.1:7447,tcp/127.0.0.1:7448
+    #[clap(short, long, value_delimiter = ',')]
+    locator: Vec<EndPoint>,
 
     /// peer, router, or client
     #[clap(short, long)]
@@ -95,7 +93,7 @@ async fn main() {
 
     // Parse the args
     let Opt {
-        connect,
+        locator,
         mode,
         payload,
         print,
@@ -104,21 +102,18 @@ async fn main() {
 
     // Setup TransportManager
     let builder = match config {
-        Some(path) => {
-            TransportManager::builder()
-                .from_config(&Config::from_file(path).unwrap())
-                .await
-                .unwrap()
-        }
-        None => TransportManager::builder()
-            .whatami(mode)
+        Some(path) => TransportManager::builder()
+            .from_config(&Config::from_file(path).unwrap())
+            .await
+            .unwrap(),
+        None => TransportManager::builder().whatami(mode),
     };
     let handler = Arc::new(MySH::new());
     let manager = builder.build(handler).unwrap();
 
     // Connect to publisher
     let mut transports: Vec<TransportUnicast> = vec![];
-    for e in connect {
+    for e in locator {
         let t = manager.open_transport_unicast(e.clone()).await.unwrap();
         transports.push(t);
     }

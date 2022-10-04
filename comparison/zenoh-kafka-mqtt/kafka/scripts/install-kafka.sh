@@ -6,6 +6,8 @@ mkdir -p "$script_dir/files"
 cd "$script_dir/files"
 
 # Download Kafka
-wget --no-clobber 'https://dlcdn.apache.org/kafka/3.3.1/kafka_2.12-3.3.1.tgz'
-tar --overwrite -xf kafka_2.13-3.3.1.tgz
-mv --no-clobber kafka_2.13-3.3.1 kafka-pkg
+KAFKA_VER=3.3.1
+SCALA_VER=2.13
+wget --no-clobber "https://downloads.apache.org/kafka/${KAFKA_VER}/kafka_${SCALA_VER}-${KAFKA_VER}.tgz"
+tar --overwrite -xf kafka_${SCALA_VER}-${KAFKA_VER}.tgz
+mv --no-clobber kafka_${SCALA_VER}-${KAFKA_VER} kafka-pkg

@@ -20,6 +20,8 @@ members = [
   "overhead",
 ]
 
+exclude = ["comparison/zenoh-kafka-mqtt"]
+
 [profile.release]
 debug=false
 lto="fat"

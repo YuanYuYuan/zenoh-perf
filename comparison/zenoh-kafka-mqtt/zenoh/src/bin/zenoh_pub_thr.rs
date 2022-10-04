@@ -1,0 +1,159 @@
+//
+// Copyright (c) 2022 ZettaScale Technology
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// http://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+//
+// Contributors:
+//   ZettaScale Zenoh Team, <zenoh@zettascale.tech>
+//
+use async_std::{sync::Arc, task};
+use clap::Parser;
+use std::{
+    path::PathBuf,
+    sync::atomic::{AtomicUsize, Ordering},
+    time::Duration,
+};
+use zenoh::prelude::r#async::*;
+use zenoh::{config::Config, prelude::Value};
+use zenoh_protocol_core::{CongestionControl, EndPoint, WhatAmI};
+
+#[derive(Debug, Parser)]
+#[clap(name = "zenoh_pub_thr")]
+struct Opt {
+    #[clap(short, long, value_delimiter = ',')]
+    listen: Option<Vec<EndPoint>>,
+
+    #[clap(short, long, value_delimiter = ',')]
+    connect: Option<Vec<EndPoint>>,
+
+    /// peer, router, or client
+    #[clap(short, long)]
+    mode: WhatAmI,
+
+    /// payload size (bytes)
+    #[clap(short, long)]
+    payload: usize,
+
+    /// print the counter
+    #[clap(short = 't', long)]
+    print: bool,
+
+    /// configuration file (json5 or yaml)
+    #[clap(long = "conf", parse(from_os_str))]
+    config: Option<PathBuf>,
+
+    /// declare a numerical Id for the publisher's key expression
+    #[clap(long)]
+    use_expr: bool,
+
+    /// declare publication before the publisher
+    #[clap(long)]
+    declare_publisher: bool,
+}
+
+const KEY_EXPR: &str = "test/thr";
+
+#[async_std::main]
+async fn main() {
+    // Initiate logging
+    env_logger::init();
+
+    // Parse the args
+    let Opt {
+        listen,
+        connect,
+        mode,
+        payload,
+        print,
+        config,
+        use_expr,
+        declare_publisher,
+    } = Opt::parse();
+    let config = {
+        let mut config: Config = if let Some(path) = config {
+            Config::from_file(path).unwrap()
+        } else {
+            Config::default()
+        };
+        config.set_mode(Some(mode)).unwrap();
+        config
+            .timestamping
+            .set_enabled(Some(zenoh::config::ModeDependentValue::Unique(false)))
+            .unwrap();
+        config.scouting.multicast.set_enabled(Some(false)).unwrap();
+        match mode {
+            WhatAmI::Peer => {
+                if let Some(endpoint) = listen {
+                    config.listen.endpoints.extend(endpoint);
+                }
+                if let Some(endpoint) = connect {
+                    config.connect.endpoints.extend(endpoint);
+                }
+            }
+            WhatAmI::Client => {
+                if let Some(endpoint) = connect {
+                    config.connect.endpoints.extend(endpoint);
+                }
+            }
+            _ => panic!("Unsupported mode: {}", mode),
+        };
+        config
+    };
+
+    let value: Value = (0usize..payload)
+        .map(|i| (i % 10) as u8)
+        .collect::<Vec<u8>>()
+        .into();
+
+    let session = zenoh::open(config).res().await.unwrap();
+    let writer = if use_expr {
+        let expr_id = session.declare_keyexpr(KEY_EXPR).res().await.unwrap();
+        if declare_publisher {
+            session.declare_publisher(expr_id.clone());
+        }
+        session.put(expr_id, value.clone())
+    } else {
+        if declare_publisher {
+            session.declare_publisher(KEY_EXPR);
+        }
+        session.put(KEY_EXPR, value.clone())
+    };
+
+    if print {
+        let count = Arc::new(AtomicUsize::new(0));
+        let c_count = count.clone();
+        task::spawn(async move {
+            loop {
+                task::sleep(Duration::from_secs(1)).await;
+                let c = count.swap(0, Ordering::Relaxed);
+                if c > 0 {
+                    println!("{} msg/s", c);
+                }
+            }
+        });
+
+        loop {
+            writer
+                .clone()
+                .congestion_control(CongestionControl::Block)
+                .res()
+                .await
+                .unwrap();
+            c_count.fetch_add(1, Ordering::Relaxed);
+        }
+    } else {
+        loop {
+            writer
+                .clone()
+                .congestion_control(CongestionControl::Block)
+                .res()
+                .await
+                .unwrap();
+        }
+    }
+}

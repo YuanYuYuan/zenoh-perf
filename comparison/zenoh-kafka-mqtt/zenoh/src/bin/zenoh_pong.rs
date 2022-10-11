@@ -29,10 +29,6 @@ struct Opt {
     /// peer, router, or client
     #[clap(short, long, possible_values = ["client", "peer"])]
     mode: WhatAmI,
-
-    /// declare key expression
-    #[clap(long)]
-    declare_keyexpr: bool,
 }
 
 const KEY_EXPR_PING: &str = "test/ping";
@@ -67,25 +63,14 @@ async fn main() {
     config.scouting.multicast.set_enabled(Some(false)).unwrap();
 
     let session = zenoh::open(config).res().await.unwrap();
-    let (key_expr_ping, key_expr_pong) = if opt.declare_keyexpr {
-        (
-            session.declare_keyexpr(KEY_EXPR_PING).res().await.unwrap(),
-            session.declare_keyexpr(KEY_EXPR_PONG).res().await.unwrap(),
-        )
-    } else {
-        (
-            zenoh::key_expr::KeyExpr::new(KEY_EXPR_PING).unwrap(),
-            zenoh::key_expr::KeyExpr::new(KEY_EXPR_PONG).unwrap(),
-        )
-    };
     let publisher = session
-        .declare_publisher(key_expr_pong)
+        .declare_publisher(KEY_EXPR_PONG)
         .congestion_control(CongestionControl::Block)
         .res()
         .await
         .unwrap();
     let subscriber = session
-        .declare_subscriber(key_expr_ping)
+        .declare_subscriber(KEY_EXPR_PING)
         .reliable()
         .res()
         .await

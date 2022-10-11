@@ -46,14 +46,6 @@ struct Opt {
     /// configuration file (json5 or yaml)
     #[clap(long = "conf", parse(from_os_str))]
     config: Option<PathBuf>,
-
-    /// declare a numerical Id for the publisher's key expression
-    #[clap(long)]
-    use_expr: bool,
-
-    /// declare publication before the publisher
-    #[clap(long)]
-    declare_publisher: bool,
 }
 
 const KEY_EXPR: &str = "test/thr";
@@ -71,8 +63,6 @@ async fn main() {
         payload,
         print,
         config,
-        use_expr,
-        declare_publisher,
     } = Opt::parse();
     let config = {
         let mut config: Config = if let Some(path) = config {
@@ -105,24 +95,18 @@ async fn main() {
         config
     };
 
-    let value: Value = (0usize..payload)
+    let data: Value = (0usize..payload)
         .map(|i| (i % 10) as u8)
         .collect::<Vec<u8>>()
         .into();
 
     let session = zenoh::open(config).res().await.unwrap();
-    let writer = if use_expr {
-        let expr_id = session.declare_keyexpr(KEY_EXPR).res().await.unwrap();
-        if declare_publisher {
-            session.declare_publisher(expr_id.clone());
-        }
-        session.put(expr_id, value.clone())
-    } else {
-        if declare_publisher {
-            session.declare_publisher(KEY_EXPR);
-        }
-        session.put(KEY_EXPR, value.clone())
-    };
+    let publisher = session
+        .declare_publisher(KEY_EXPR)
+        .congestion_control(CongestionControl::Block)
+        .res()
+        .await
+        .unwrap();
 
     if print {
         let count = Arc::new(AtomicUsize::new(0));
@@ -138,22 +122,12 @@ async fn main() {
         });
 
         loop {
-            writer
-                .clone()
-                .congestion_control(CongestionControl::Block)
-                .res()
-                .await
-                .unwrap();
+            publisher.put(data.clone()).res().await.unwrap();
             c_count.fetch_add(1, Ordering::Relaxed);
         }
     } else {
         loop {
-            writer
-                .clone()
-                .congestion_control(CongestionControl::Block)
-                .res()
-                .await
-                .unwrap();
+            publisher.put(data.clone()).res().await.unwrap();
         }
     }
 }

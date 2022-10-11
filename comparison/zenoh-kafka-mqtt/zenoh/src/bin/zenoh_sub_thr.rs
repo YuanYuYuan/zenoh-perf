@@ -42,14 +42,6 @@ struct Opt {
     /// configuration file (json5 or yaml)
     #[clap(long = "conf", parse(from_os_str))]
     config: Option<PathBuf>,
-
-    /// declare a numerical Id for the subscribed key expression
-    #[clap(long)]
-    use_expr: bool,
-
-    /// do not use callback for subscriber
-    #[clap(long)]
-    no_callback: bool,
 }
 
 const KEY_EXPR: &str = "test/thr";
@@ -66,8 +58,6 @@ async fn main() {
         mode,
         payload,
         config,
-        use_expr,
-        no_callback,
     } = Opt::parse();
 
     let config = {
@@ -101,34 +91,17 @@ async fn main() {
     let c_messages = messages.clone();
 
     let session = zenoh::open(config).res().await.unwrap();
-    let sub_builder = if use_expr {
-        session.declare_subscriber(KEY_EXPR)
-    } else {
-        session.declare_subscriber(session.declare_keyexpr(KEY_EXPR).res().await.unwrap())
-    };
 
-    if no_callback {
-        task::spawn(async move {
-            measure(c_messages, payload).await;
-        });
-
-        let subscriber = sub_builder.reliable().res().await.unwrap();
-
-        while subscriber.recv_async().await.is_ok() {
-            messages.fetch_add(1, Ordering::Relaxed);
-        }
-    } else {
-        let _subscriber = sub_builder
-            .callback(move |_| {
-                c_messages.fetch_add(1, Ordering::Relaxed);
-            })
-            .reliable()
-            .res()
-            .await
-            .unwrap();
-
-        measure(messages, payload).await;
-    }
+    let _sub = session
+        .declare_subscriber(KEY_EXPR)
+        .callback_mut(move |_| {
+            c_messages.fetch_add(1, Ordering::Relaxed);
+        })
+        .reliable()
+        .res()
+        .await
+        .unwrap();
+    measure(messages, payload).await;
 }
 
 async fn measure(messages: Arc<AtomicUsize>, payload: usize) {

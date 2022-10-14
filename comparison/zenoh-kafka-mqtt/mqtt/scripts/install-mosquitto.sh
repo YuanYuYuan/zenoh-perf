@@ -5,7 +5,7 @@ script_dir="$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)"
 cd "$script_dir/.."
 
 VERSION=2.0.15
-wget -c https://github.com/eclipse/mosquitto/archive/refs/tags/v${VERSION}.tar.gz
+wget -nc -c https://github.com/eclipse/mosquitto/archive/refs/tags/v${VERSION}.tar.gz
 
 tar xvf v${VERSION}.tar.gz 
 mv mosquitto-${VERSION} mosquitto

@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 build: build_router build_throughput build_latency
 
 build_throughput:

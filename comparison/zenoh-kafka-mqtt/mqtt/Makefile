@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 CFLAGS := -O2 -Wall -g -pg
 
-build: build_throughput build_latency
+build: build_throughput build_latency install_mosquitto
 
 build_throughput: mqtt-lib
 	@echo ">>> Compiling throughput..."
@@ -22,6 +22,9 @@ build_latency: mqtt-lib
 
 install_mqtt mqtt-lib:
 	@./scripts/install-paho.mqtt.c.sh
+
+install_mosquitto:
+	@./scripts/install-mosquitto.sh
 
 clean:
 	@rm -rvf target

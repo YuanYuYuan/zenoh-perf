@@ -1,9 +1,9 @@
 SHELL := /bin/bash
 CFLAGS := -O2 -Wall -g -pg
 
-build: build_throughput build_latency install_mosquitto
+build: build_throughput build_latency
 
-build_throughput: mqtt-lib
+build_throughput: mqtt-lib mosquitto
 	@echo ">>> Compiling throughput..."
 	@mkdir -p ./target
 	@source ./scripts/set-vars.sh && \
@@ -11,7 +11,7 @@ build_throughput: mqtt-lib
 		gcc $(CFLAGS) throughput/mqtt_sub_thr.c -lpaho-mqtt3a  -pthread -o target/mqtt_sub_thr
 	@echo ">>> Done."
 
-build_latency: mqtt-lib
+build_latency: mqtt-lib mosquitto
 	@echo ">>> Compiling latency..."
 	@source ./scripts/set-vars.sh
 	@mkdir -p ./target
@@ -23,7 +23,7 @@ build_latency: mqtt-lib
 install_mqtt mqtt-lib:
 	@./scripts/install-paho.mqtt.c.sh
 
-install_mosquitto:
+install_mosquitto mosquitto:
 	@./scripts/install-mosquitto.sh
 
 clean:

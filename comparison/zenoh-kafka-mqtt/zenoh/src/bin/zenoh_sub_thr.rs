@@ -94,7 +94,7 @@ async fn main() {
 
     let _sub = session
         .declare_subscriber(KEY_EXPR)
-        .callback_mut(move |_| {
+        .callback(move |_| {
             c_messages.fetch_add(1, Ordering::Relaxed);
         })
         .reliable()

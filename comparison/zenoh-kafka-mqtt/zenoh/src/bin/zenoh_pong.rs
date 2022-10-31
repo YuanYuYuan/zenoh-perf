@@ -29,6 +29,10 @@ struct Opt {
     /// peer, router, or client
     #[clap(short, long, possible_values = ["client", "peer"])]
     mode: WhatAmI,
+
+    /// disable gossip
+    #[clap(short, long)]
+    disable_gossip: bool,
 }
 
 const KEY_EXPR_PING: &str = "test/ping";
@@ -61,6 +65,7 @@ async fn main() {
         _ => panic!("Unsupported mode: {}", opt.mode),
     };
     config.scouting.multicast.set_enabled(Some(false)).unwrap();
+    config.scouting.gossip.set_enabled(Some(!opt.disable_gossip)).unwrap();
 
     let session = zenoh::open(config).res().await.unwrap();
     let publisher = session

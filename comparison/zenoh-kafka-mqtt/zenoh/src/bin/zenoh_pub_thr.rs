@@ -46,6 +46,11 @@ struct Opt {
     /// configuration file (json5 or yaml)
     #[clap(long = "conf", parse(from_os_str))]
     config: Option<PathBuf>,
+
+    /// disable gossip
+    #[clap(short, long)]
+    disable_gossip: bool,
+
 }
 
 const KEY_EXPR: &str = "test/thr";
@@ -63,6 +68,7 @@ async fn main() {
         payload,
         print,
         config,
+        disable_gossip,
     } = Opt::parse();
     let config = {
         let mut config: Config = if let Some(path) = config {
@@ -76,6 +82,7 @@ async fn main() {
             .set_enabled(Some(zenoh::config::ModeDependentValue::Unique(false)))
             .unwrap();
         config.scouting.multicast.set_enabled(Some(false)).unwrap();
+        config.scouting.gossip.set_enabled(Some(!disable_gossip)).unwrap();
         match mode {
             WhatAmI::Peer => {
                 if let Some(endpoint) = listen {

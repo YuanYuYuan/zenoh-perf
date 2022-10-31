@@ -45,6 +45,10 @@ struct Opt {
     /// spawn a task to receive or not
     #[clap(long = "parallel")]
     parallel: bool,
+
+    /// disable gossip
+    #[clap(short, long)]
+    disable_gossip: bool,
 }
 
 const KEY_EXPR_PING: &str = "test/ping";
@@ -173,6 +177,7 @@ async fn main() {
         _ => panic!("Unsupported mode: {}", opt.mode),
     };
     config.scouting.multicast.set_enabled(Some(false)).unwrap();
+    config.scouting.gossip.set_enabled(Some(!opt.disable_gossip)).unwrap();
 
     if opt.parallel {
         parallel(opt, config).await;

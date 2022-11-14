@@ -6,15 +6,14 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-std = { version = "=1.12.0", features = ["unstable"] }
-async-trait = "0.1.53"
+async-std = { version = "1.12.0", features = ["unstable"] }
+async-trait = "0.1.58"
 clap = { version = "3.1.12", features = ["derive"] }
-env_logger = "0.9.0"
-log = "0.4.16"
+env_logger = "0.9.3"
+log = "0.4.17"
 rand = "0.8.5"
-slab = "0.4.6"
+slab = "0.4.7"
 json5 = "0.4.1"
-
 zenoh                = { git = "https://github.com/eclipse-zenoh/zenoh.git", default-features = false, features = ["unstable", "transport_tcp", "transport_udp"] }
 zenoh-util           = { git = "https://github.com/eclipse-zenoh/zenoh.git" }
 zenoh-core           = { git = "https://github.com/eclipse-zenoh/zenoh.git" }
@@ -23,4 +22,11 @@ zenoh-protocol-core  = { git = "https://github.com/eclipse-zenoh/zenoh.git" }
 zenoh-buffers        = { git = "https://github.com/eclipse-zenoh/zenoh.git" }
 lazy_static = "1.4.0"
 git-version = "0.3.5"
-futures = "0.3.24"
+futures = "0.3.25"
+
+[profile.release]
+debug = false     # If you want debug symbol in release mode, set the env variable: RUSTFLAGS=-g
+lto = "fat"
+codegen-units = 1
+opt-level = 3
+panic = "abort"

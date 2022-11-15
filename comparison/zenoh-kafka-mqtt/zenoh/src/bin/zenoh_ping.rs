@@ -15,6 +15,7 @@ use async_std::sync::{Arc, Mutex};
 use async_std::task;
 use clap::Parser;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use zenoh::config::Config;
 use zenoh::prelude::r#async::*;
@@ -46,9 +47,9 @@ struct Opt {
     #[clap(long = "parallel")]
     parallel: bool,
 
-    /// disable gossip
-    #[clap(short, long)]
-    disable_gossip: bool,
+    /// configuration file (json5 or yaml)
+    #[clap(long = "conf", parse(from_os_str))]
+    config: Option<PathBuf>,
 }
 
 const KEY_EXPR_PING: &str = "test/ping";
@@ -158,7 +159,11 @@ async fn main() {
     // Parse the args
     let opt = Opt::parse();
 
-    let mut config = Config::default();
+    let mut config: Config = if let Some(path) = &opt.config {
+        Config::from_file(path).unwrap()
+    } else {
+        Config::default()
+    };
     config.set_mode(Some(opt.mode)).unwrap();
     match opt.mode {
         WhatAmI::Peer => {
@@ -177,7 +182,6 @@ async fn main() {
         _ => panic!("Unsupported mode: {}", opt.mode),
     };
     config.scouting.multicast.set_enabled(Some(false)).unwrap();
-    config.scouting.gossip.set_enabled(Some(!opt.disable_gossip)).unwrap();
 
     if opt.parallel {
         parallel(opt, config).await;

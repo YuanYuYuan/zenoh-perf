@@ -13,6 +13,7 @@
 //
 use async_std::future;
 use clap::Parser;
+use std::path::PathBuf;
 use zenoh::config::Config;
 use zenoh::prelude::r#async::*;
 use zenoh_protocol_core::{CongestionControl, EndPoint, WhatAmI};
@@ -30,9 +31,9 @@ struct Opt {
     #[clap(short, long, possible_values = ["client", "peer"])]
     mode: WhatAmI,
 
-    /// disable gossip
-    #[clap(short, long)]
-    disable_gossip: bool,
+    /// configuration file (json5 or yaml)
+    #[clap(long = "conf", parse(from_os_str))]
+    config: Option<PathBuf>,
 }
 
 const KEY_EXPR_PING: &str = "test/ping";
@@ -46,7 +47,11 @@ async fn main() {
     // Parse the args
     let opt = Opt::parse();
 
-    let mut config = Config::default();
+    let mut config: Config = if let Some(path) = &opt.config {
+        Config::from_file(path).unwrap()
+    } else {
+        Config::default()
+    };
     config.set_mode(Some(opt.mode)).unwrap();
     match opt.mode {
         WhatAmI::Peer => {
@@ -65,7 +70,6 @@ async fn main() {
         _ => panic!("Unsupported mode: {}", opt.mode),
     };
     config.scouting.multicast.set_enabled(Some(false)).unwrap();
-    config.scouting.gossip.set_enabled(Some(!opt.disable_gossip)).unwrap();
 
     let session = zenoh::open(config).res().await.unwrap();
     let publisher = session

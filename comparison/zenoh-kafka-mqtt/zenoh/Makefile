@@ -13,7 +13,9 @@ build_latency:
 		--bin zenoh_pong
 build_router:
 	@git -C zenoh pull &> /dev/null || git clone https://github.com/eclipse-zenoh/zenoh
-	@cargo build --release --bin zenohd
+	@cd zenoh && cargo build --release --bin zenohd
 
 clean:
 	@cargo clean
+	@rm Cargo.lock
+	@cd zenoh && cargo clean

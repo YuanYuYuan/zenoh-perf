@@ -11,14 +11,14 @@
 // Contributors:
 //   ZettaScale Zenoh Team, <zenoh@zettascale.tech>
 //
-use async_std::{sync::Arc, task};
 use clap::Parser;
 use std::{
     path::PathBuf,
     sync::atomic::{AtomicUsize, Ordering},
     time::Duration,
 };
-use zenoh::prelude::r#async::*;
+use std::{sync::Arc, thread};
+use zenoh::prelude::sync::*;
 use zenoh::{config::Config, prelude::Value};
 use zenoh_protocol_core::{CongestionControl, EndPoint, WhatAmI};
 
@@ -46,17 +46,11 @@ struct Opt {
     /// configuration file (json5 or yaml)
     #[clap(long = "conf", parse(from_os_str))]
     config: Option<PathBuf>,
-
-    /// disable gossip
-    #[clap(short, long)]
-    disable_gossip: bool,
-
 }
 
 const KEY_EXPR: &str = "test/thr";
 
-#[async_std::main]
-async fn main() {
+fn main() {
     // Initiate logging
     env_logger::init();
 
@@ -68,7 +62,6 @@ async fn main() {
         payload,
         print,
         config,
-        disable_gossip,
     } = Opt::parse();
     let config = {
         let mut config: Config = if let Some(path) = config {
@@ -82,7 +75,6 @@ async fn main() {
             .set_enabled(Some(zenoh::config::ModeDependentValue::Unique(false)))
             .unwrap();
         config.scouting.multicast.set_enabled(Some(false)).unwrap();
-        config.scouting.gossip.set_enabled(Some(!disable_gossip)).unwrap();
         match mode {
             WhatAmI::Peer => {
                 if let Some(endpoint) = listen {
@@ -107,34 +99,30 @@ async fn main() {
         .collect::<Vec<u8>>()
         .into();
 
-    let session = zenoh::open(config).res().await.unwrap();
+    let session = zenoh::open(config).res().unwrap();
     let publisher = session
         .declare_publisher(KEY_EXPR)
         .congestion_control(CongestionControl::Block)
         .res()
-        .await
         .unwrap();
 
     if print {
         let count = Arc::new(AtomicUsize::new(0));
         let c_count = count.clone();
-        task::spawn(async move {
-            loop {
-                task::sleep(Duration::from_secs(1)).await;
-                let c = count.swap(0, Ordering::Relaxed);
-                if c > 0 {
-                    println!("{} msg/s", c);
-                }
+        thread::spawn(move || loop {
+            thread::sleep(Duration::from_secs(1));
+            let c = count.swap(0, Ordering::Relaxed);
+            if c > 0 {
+                println!("{} msg/s", c);
             }
         });
-
         loop {
-            publisher.put(data.clone()).res().await.unwrap();
+            publisher.put(data.clone()).res().unwrap();
             c_count.fetch_add(1, Ordering::Relaxed);
         }
     } else {
         loop {
-            publisher.put(data.clone()).res().await.unwrap();
+            publisher.put(data.clone()).res().unwrap();
         }
     }
 }

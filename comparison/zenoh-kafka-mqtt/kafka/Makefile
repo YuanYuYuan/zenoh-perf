@@ -13,3 +13,4 @@ build_latency:
 
 clean:
 	@cargo clean
+	@rm Cargo.lock

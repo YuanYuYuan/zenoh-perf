@@ -4,20 +4,21 @@ use anyhow::{anyhow, Result};
 use clap::Parser;
 use log::{info, trace};
 use opts::Opts;
-use rumqttc::{AsyncClient, Event, MqttOptions, Packet};
-use rumqttc_test::{DEFAULT_CAP_SIZE, DEFAULT_QOS};
+use rumqttc::{Event, Packet};
+use rumqttc_test::{create_client, DEFAULT_QOS};
 use std::process;
+use tokio::time::timeout;
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> Result<()> {
     pretty_env_logger::init();
 
     let opts = Opts::parse();
-    let timeout = opts.timeout;
+    let timeout_dur = opts.timeout;
     let future = run_pong(opts);
 
-    if let Some(timeout) = timeout {
-        async_std::future::timeout(timeout, future)
+    if let Some(timeout_dur) = timeout_dur {
+        timeout(timeout_dur, future)
             .await
             .map_err(|_| anyhow!("timeout"))??;
     } else {
@@ -31,12 +32,8 @@ async fn run_pong(opts: Opts) -> Result<()> {
     let pong_id = process::id();
     info!("Start pong {}", pong_id);
 
-    let client_config = MqttOptions::new(
-        env!("CARGO_PKG_NAME"),
-        opts.broker.ip().to_string(),
-        opts.broker.port(),
-    );
-    let (client, mut event_loop) = AsyncClient::new(client_config, DEFAULT_CAP_SIZE);
+    let (client, mut event_loop) =
+        create_client(env!("CARGO_BIN_NAME"), opts.broker, opts.max_payload_size)?;
     client.subscribe(&opts.ping_topic, DEFAULT_QOS).await?;
 
     loop {

@@ -5,20 +5,20 @@ use clap::Parser;
 use itertools::chain;
 use log::{info, trace};
 use opts::Opts;
-use rumqttc::{AsyncClient, MqttOptions};
-use rumqttc_test::{DEFAULT_CAP_SIZE, DEFAULT_QOS};
+use rumqttc_test::{create_client, DEFAULT_QOS};
 use std::{iter, process};
+use tokio::time::timeout;
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> Result<()> {
     pretty_env_logger::init();
 
     let opts = Opts::parse();
-    let timeout = opts.timeout;
+    let timeout_dur = opts.timeout;
 
     let future = run_producer(opts);
-    if let Some(timeout) = timeout {
-        async_std::future::timeout(timeout, future)
+    if let Some(timeout_dur) = timeout_dur {
+        timeout(timeout_dur, future)
             .await
             .map_err(|_| anyhow!("timeout"))??;
     } else {
@@ -33,21 +33,32 @@ async fn run_producer(opts: Opts) -> Result<()> {
     info!("Start producer {} on topic {}", producer_id, opts.topic);
 
     // Configure the client
-    let client_config = MqttOptions::new(
-        env!("CARGO_PKG_NAME"),
-        opts.broker.ip().to_string(),
-        opts.broker.port(),
-    );
-    let (client, _event_loop) = AsyncClient::new(client_config, DEFAULT_CAP_SIZE);
-    client.subscribe(&opts.topic, DEFAULT_QOS).await?;
+    let (client, mut event_loop) =
+        create_client(env!("CARGO_BIN_NAME"), opts.broker, opts.payload_size)?;
 
-    for msg_idx in 0.. {
-        let payload = generate_payload(producer_id, msg_idx as u32, opts.payload_size);
-        trace!("Producer {} sends a message {}", producer_id, msg_idx);
-        client
-            .publish(&opts.topic, DEFAULT_QOS, false, payload)
-            .await?;
-    }
+    // Spin the event loop to drive publishing work
+    let spin_worker = async move {
+        loop {
+            event_loop.poll().await?;
+        }
+
+        #[allow(unreachable_code)]
+        anyhow::Ok(())
+    };
+
+    // Publishing loop
+    let publish_worker = async move {
+        for msg_idx in 0.. {
+            let payload = generate_payload(producer_id, msg_idx as u32, opts.payload_size);
+            trace!("Producer {} sends a message {}", producer_id, msg_idx);
+            client
+                .publish(&opts.topic, DEFAULT_QOS, false, payload)
+                .await?;
+        }
+        anyhow::Ok(())
+    };
+
+    futures::try_join!(spin_worker, publish_worker)?;
 
     Ok(())
 }

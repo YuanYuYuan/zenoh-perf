@@ -7,19 +7,18 @@ use std::{net::SocketAddr, time::Duration};
 pub struct Opts {
     #[clap(long, default_value_t = DEFAULT_PING_TOPIC.to_string())]
     pub ping_topic: String,
+
     #[clap(long, default_value_t = DEFAULT_PONG_TOPIC.to_string())]
     pub pong_topic: String,
+
     #[clap(long, parse(try_from_str = parse_duration))]
     pub timeout: Option<Duration>,
 
-    // public options
     #[clap(short = 'b', long, default_value = "127.0.0.1:1883")]
     pub broker: SocketAddr,
-    // #[clap(short = 'P', long)]
-    // pub producer_configs: Option<Vec<KeyVal>>,
 
-    // #[clap(short = 'C', long)]
-    // pub consumer_configs: Option<Vec<KeyVal>>,
+    #[clap(long, default_value = "2147483648")]
+    pub max_payload_size: usize,
 }
 
 fn parse_duration(text: &str) -> Result<Duration> {

@@ -1,29 +1,34 @@
 mod opts;
 
-use async_std::{sync::Arc, task};
-use rumqttc::{AsyncClient, Event, MqttOptions, Packet};
-use std::{
-    process,
-    sync::atomic::{AtomicUsize, Ordering},
-    time::{Duration, Instant},
-};
-
 use anyhow::{anyhow, ensure, Result};
 use clap::Parser;
 use log::{error, info, trace};
 use opts::Opts;
-use rumqttc_test::{DEFAULT_CAP_SIZE, DEFAULT_QOS};
+use rumqttc::{Event, Packet};
+use rumqttc_test::{create_client, DEFAULT_QOS};
+use std::{
+    process,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
+    time::{Duration, Instant},
+};
+use tokio::{
+    spawn,
+    time::{sleep, timeout},
+};
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> Result<()> {
     pretty_env_logger::init();
 
     let opts = Opts::parse();
-    let timeout = opts.timeout;
+    let timeout_dur = opts.timeout;
 
     let future = run_consumer(opts);
-    if let Some(timeout) = timeout {
-        async_std::future::timeout(timeout, future)
+    if let Some(timeout_dur) = timeout_dur {
+        timeout(timeout_dur, future)
             .await
             .map_err(|_| anyhow!("timeout"))??;
     } else {
@@ -38,16 +43,12 @@ async fn run_consumer(opts: Opts) -> Result<()> {
     info!("Start consumer {} on topic {}", consumer_id, opts.topic);
 
     // Configure the client
-    let client_config = MqttOptions::new(
-        env!("CARGO_PKG_NAME"),
-        opts.broker.ip().to_string(),
-        opts.broker.port(),
-    );
-    let (client, mut event_loop) = AsyncClient::new(client_config, DEFAULT_CAP_SIZE);
+    let (client, mut event_loop) =
+        create_client(env!("CARGO_BIN_NAME"), opts.broker, opts.payload_size)?;
     client.subscribe(&opts.topic, DEFAULT_QOS).await?;
 
     let counter = Arc::new(AtomicUsize::new(0));
-    async_std::task::spawn(measure(counter.clone(), opts.payload_size));
+    spawn(measure(counter.clone(), opts.payload_size));
 
     loop {
         let event = event_loop.poll().await?;
@@ -112,7 +113,7 @@ pub struct PayloadInfo {
 async fn measure(messages: Arc<AtomicUsize>, payload: usize) {
     let mut timer = Instant::now();
     loop {
-        task::sleep(Duration::from_secs(1)).await;
+        sleep(Duration::from_secs(1)).await;
 
         if messages.load(Ordering::Relaxed) > 0 {
             let elapsed = timer.elapsed().as_micros() as f64;

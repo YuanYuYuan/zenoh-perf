@@ -197,21 +197,21 @@ int main(int argc, char* argv[])
         pubmsg.retained = 0;
         if ((rc = MQTTAsync_sendMessage(client, PING_TOPIC, &pubmsg, NULL)) == MQTTASYNC_SUCCESS)
         {
-                clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+            clock_gettime(CLOCK_MONOTONIC_RAW, &start);
 
-                // The message was sent, we should wait for the reply
-                pthread_mutex_lock(&ping_info.lock);
-                pthread_cond_wait(&ping_info.cond, &ping_info.lock);
-                clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-                pthread_mutex_unlock(&ping_info.lock);
+            // The message was sent, we should wait for the reply
+            pthread_mutex_lock(&ping_info.lock);
+            pthread_cond_wait(&ping_info.cond, &ping_info.lock);
+            clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+            pthread_mutex_unlock(&ping_info.lock);
 
-                received = 0;
-                u_int64_t elapsed = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
+            received = 0;
+            u_int64_t elapsed = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
 
-                /* printf("mqtt,%s,latency,%s,%ld,%f,%lu,%ld\n", scenario, name, payload, interveal, ping_info.seq_num, elapsed); */
-                printf("%f,%ld\n", interveal, elapsed / 2);
-                fflush(stdout);
-                seq_num += 1;
+            /* printf("mqtt,%s,latency,%s,%ld,%f,%lu,%ld\n", scenario, name, payload, interveal, ping_info.seq_num, elapsed); */
+            printf("%.10f,%ld\n", interveal, elapsed / 2);
+            fflush(stdout);
+            seq_num += 1;
         }
 
     }
@@ -221,5 +221,3 @@ int main(int argc, char* argv[])
     MQTTAsync_destroy(&client);
     return rc;
 }
-
-

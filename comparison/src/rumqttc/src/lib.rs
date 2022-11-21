@@ -6,7 +6,7 @@ pub const DEFAULT_THROUGHPUT_TOPIC: &str = "THROUGHPUT";
 pub const DEFAULT_PING_TOPIC: &str = "PING";
 pub const DEFAULT_PONG_TOPIC: &str = "PONG";
 pub const DEFAULT_GROUP_ID: &str = "DUMMY_GROUP";
-pub const DEFAULT_QOS: QoS = QoS::AtLeastOnce;
+pub const DEFAULT_QOS: QoS = QoS::AtMostOnce;
 pub const DEFAULT_CAP_SIZE: usize = 10;
 pub const PACKET_HEADER_SIZE: usize = 14;
 

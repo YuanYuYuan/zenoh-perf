@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
     MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer5;
     MQTTAsync_createOptions create_opts = MQTTAsync_createOptions_initializer;
     int rc, c;
-    float interveal = 1; //s
+    double interveal = 1; //s
     size_t payload = 64;
     char* broker = NULL;
     char* payload_value = NULL;
@@ -134,7 +134,7 @@ int main(int argc, char* argv[])
     }
 
     if (interveal_value != NULL) {
-        interveal = (float) atof(interveal_value);
+        interveal = (double) atof(interveal_value);
     }
 
     data = (void*) calloc(sizeof(u_int8_t),payload);
@@ -188,7 +188,7 @@ int main(int argc, char* argv[])
     ping_info.seq_num = 0;
 
     while (1) {
-        usleep((useconds_t)interveal * 1000000);
+        usleep((useconds_t)(interveal * 1000000));
         MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
         memcpy(data, (void *) &seq_num, sizeof(u_int64_t));
         pubmsg.payload = data;

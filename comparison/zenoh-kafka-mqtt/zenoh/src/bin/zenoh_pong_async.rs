@@ -11,11 +11,11 @@
 // Contributors:
 //   ZettaScale Zenoh Team, <zenoh@zettascale.tech>
 //
-
+use async_std::future;
 use clap::Parser;
 use std::path::PathBuf;
 use zenoh::config::Config;
-use zenoh::prelude::sync::*;
+use zenoh::prelude::r#async::*;
 use zenoh_protocol_core::{CongestionControl, EndPoint, WhatAmI};
 
 #[derive(Debug, Parser)]
@@ -36,8 +36,11 @@ struct Opt {
     config: Option<PathBuf>,
 }
 
+const KEY_EXPR_PING: &str = "test/ping";
+const KEY_EXPR_PONG: &str = "test/pong";
 
-fn main() {
+#[async_std::main]
+async fn main() {
     // initiate logging
     env_logger::init();
 
@@ -68,24 +71,24 @@ fn main() {
     };
     config.scouting.multicast.set_enabled(Some(false)).unwrap();
 
-    let session = zenoh::open(config).res().unwrap().into_arc();
-
-    // The key expression to read the data from
-    let key_expr_ping = keyexpr::new("test/ping").unwrap();
-
-    // The key expression to echo the data back
-    let key_expr_pong = keyexpr::new("test/pong").unwrap();
-
+    let session = zenoh::open(config).res().await.unwrap();
     let publisher = session
-        .declare_publisher(key_expr_pong)
+        .declare_publisher(KEY_EXPR_PONG)
         .congestion_control(CongestionControl::Block)
         .res()
+        .await
+        .unwrap();
+    let subscriber = session
+        .declare_subscriber(KEY_EXPR_PING)
+        .reliable()
+        .res()
+        .await
         .unwrap();
 
-    let _sub = session
-        .declare_subscriber(key_expr_ping)
-        .callback(move |sample| publisher.put(sample.value).res().unwrap())
-        .res()
-        .unwrap();
-    loop {}
+    while let Ok(sample) = subscriber.recv_async().await {
+        publisher.put(sample).res().await.unwrap();
+    }
+
+    // Stop forever
+    future::pending::<()>().await;
 }

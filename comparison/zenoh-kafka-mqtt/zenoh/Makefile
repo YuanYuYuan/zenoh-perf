@@ -4,8 +4,10 @@ build: build_router build_throughput build_latency
 
 build_throughput:
 	@cargo build --release \
+		--features="shared-memory" \
 		--bin zenoh_pub_thr \
-		--bin zenoh_sub_thr
+		--bin zenoh_sub_thr \
+		--bin zenoh_pub_shm
 
 build_latency:
 	@cargo build --release \

@@ -26,8 +26,8 @@ void data_available(dds_entity_t rd, void *arg) {
     if (samplesReceived < 0) DDS_FATAL("dds_take: %s\n", dds_strretcode(-samplesReceived));
     for (int i = 0; i < samplesReceived; i++) {
         if (info[i].valid_data) {
-            RoundTripModule_DataType * thisSample = &data[i];
-            rc = dds_write(writer, thisSample);
+            RoundTripModule_DataType* thisSample = &data[i];
+            rc = dds_write_ts(writer, thisSample, info[i].source_timestamp);
             if (rc < 0) DDS_FATAL("dds_write_ts: %d\n", -rc);
         }
     }

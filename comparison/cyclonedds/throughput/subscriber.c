@@ -24,8 +24,8 @@ void data_avaiable (dds_entity_t reader, void *arg) {
 
     for (int i = 0; i < samplesReceived; i++) {
         if (info[i].valid_data) {
-            ThroughputModule_DataType* this_sample = &data[i];
-            payloadSize = this_sample->payload._length;
+            ThroughputModule_DataType* thisSample = &data[i];
+            payloadSize = thisSample->payload._length;
             numSamples++;
         }
     }
@@ -36,6 +36,7 @@ dds_entity_t prepare_dds(dds_entity_t *reader, const char *partitionName) {
     dds_entity_t participant = dds_create_participant(DDS_DOMAIN_DEFAULT, NULL, NULL);
     if (participant < 0) DDS_FATAL("dds_create_participant: %s\n", dds_strretcode(-participant));
 
+    // topic
     dds_entity_t topic = dds_create_topic(
         participant,
         &ThroughputModule_DataType_desc,
@@ -45,6 +46,7 @@ dds_entity_t prepare_dds(dds_entity_t *reader, const char *partitionName) {
     );
     if (topic < 0) DDS_FATAL("dds_create_topic: %s\n", dds_strretcode(-topic));
 
+    // subscriber
     const char *subParts[1];
     subParts[0] = partitionName;
     dds_qos_t *subQos = dds_create_qos();
@@ -53,25 +55,27 @@ dds_entity_t prepare_dds(dds_entity_t *reader, const char *partitionName) {
     if (subscriber < 0) DDS_FATAL("dds_create_subscriber: %s\n", dds_strretcode(-subscriber));
     dds_delete_qos(subQos);
 
-    dds_qos_t *drQos = dds_create_qos();
-    dds_qset_reliability(drQos, DDS_RELIABILITY_RELIABLE, DDS_SECS (10));
-    dds_qset_history(drQos, DDS_HISTORY_KEEP_ALL, 0);
-    dds_qset_resource_limits(drQos, 4000, DDS_LENGTH_UNLIMITED, DDS_LENGTH_UNLIMITED);
-
+    // listener
     dds_listener_t *rd_listener;
     rd_listener = dds_create_listener(NULL);
     dds_lset_data_available(rd_listener, data_avaiable);
 
-    memset (data, 0, sizeof (data));
-    for (unsigned int i = 0; i < MAX_SAMPLES; i++) {
-        samples[i] = &data[i];
-    }
+    // data reader
+    dds_qos_t *drQos = dds_create_qos();
+    dds_qset_reliability(drQos, DDS_RELIABILITY_RELIABLE, DDS_SECS (10));
+    dds_qset_history(drQos, DDS_HISTORY_KEEP_ALL, 0);
+    dds_qset_resource_limits(drQos, 4000, DDS_LENGTH_UNLIMITED, DDS_LENGTH_UNLIMITED);
 
     *reader = dds_create_reader(subscriber, topic, drQos, rd_listener);
     if (*reader < 0) DDS_FATAL("dds_create_reader: %s\n", dds_strretcode(-*reader));
 
     dds_delete_qos(drQos);
     dds_delete_listener(rd_listener);
+
+    memset (data, 0, sizeof (data));
+    for (unsigned int i = 0; i < MAX_SAMPLES; i++) {
+        samples[i] = &data[i];
+    }
 
     return participant;
 }
@@ -97,7 +101,7 @@ int main (int argc, char **argv) {
     while (1) {
         numSamples = 0;
         dds_time_t prevTime = dds_time();
-        dds_sleepfor (DDS_SECS (1));
+        dds_sleepfor(DDS_SECS(1));
         if (numSamples > 0) {
             double deltaTime = dds_time() - prevTime;
             printf ("%lu,%.2f\n", payloadSize, (double)numSamples / deltaTime * DDS_NSECS_IN_SEC);

@@ -1,7 +1,7 @@
 all: install build_cyclonedds build_throughput build_latency
 
 install:
-	@git -C cyclonedds pull || clone https://github.com/eclipse-cyclonedds/cyclonedds
+	@git -C cyclonedds pull || git clone https://github.com/eclipse-cyclonedds/cyclonedds
 
 build_cyclonedds:
 	@cmake -S cyclonedds -B build -D CMAKE_INSTALL_PREFIX=install -D CMAKE_BUILD_TYPE=Release

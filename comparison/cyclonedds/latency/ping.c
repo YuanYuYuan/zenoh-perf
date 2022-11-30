@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
         rc = dds_take(reader, samples, info, MAX_SAMPLES, MAX_SAMPLES);
         if (rc < 0) DDS_FATAL("dds_take: %s\n", dds_strretcode(-rc));
 
-        printf("%.10f,%d\n", interval, (dds_time() - info[0].source_timestamp) / DDS_NSECS_IN_USEC / 2);
+        printf("%.10f,%ld\n", interval, (dds_time() - info[0].source_timestamp) / DDS_NSECS_IN_USEC / 2);
         fflush (stdout);
     }
 

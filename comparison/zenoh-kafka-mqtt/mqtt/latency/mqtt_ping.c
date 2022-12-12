@@ -102,9 +102,7 @@ int main(int argc, char* argv[])
     struct timespec start, end;
     u_int64_t seq_num = 0;
 
-
-
-     // Parsing arguments
+    // Parsing arguments
     while((c = getopt(argc, argv, ":b:p:n:s:i:")) != -1 ){
         switch (c) {
             case 'p':

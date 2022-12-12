@@ -13,7 +13,6 @@ build_throughput: mqtt-lib mosquitto
 
 build_latency: mqtt-lib mosquitto
 	@echo ">>> Compiling latency..."
-	@source ./scripts/set-vars.sh
 	@mkdir -p ./target
 	@source ./scripts/set-vars.sh && \
 		gcc $(CFLAGS) latency/mqtt_ping.c -lpaho-mqtt3a -pthread -o target/mqtt_ping && \

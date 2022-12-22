@@ -10,4 +10,5 @@ KAFKA_VER=3.3.1
 SCALA_VER=2.13
 wget --no-clobber "https://downloads.apache.org/kafka/${KAFKA_VER}/kafka_${SCALA_VER}-${KAFKA_VER}.tgz"
 tar --overwrite -xf kafka_${SCALA_VER}-${KAFKA_VER}.tgz
-mv --no-clobber kafka_${SCALA_VER}-${KAFKA_VER} kafka-pkg
+rm -rf kafka-pkg
+mv kafka_${SCALA_VER}-${KAFKA_VER} kafka-pkg

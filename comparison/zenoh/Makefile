@@ -16,5 +16,4 @@ build_latency:
 
 clean:
 	@cargo clean
-	@rm Cargo.lock
-	@cd zenoh && cargo clean
+	@rm -f Cargo.lock &> /dev/null

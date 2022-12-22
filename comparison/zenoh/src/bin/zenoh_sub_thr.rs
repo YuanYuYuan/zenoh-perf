@@ -32,7 +32,7 @@ struct Opt {
     connect: Option<Vec<EndPoint>>,
 
     /// peer, router, or client
-    #[clap(short, long, possible_values = ["peer", "client"])]
+    #[clap(short, long)]
     mode: WhatAmI,
 
     /// payload size (bytes)
@@ -40,7 +40,7 @@ struct Opt {
     payload: usize,
 
     /// configuration file (json5 or yaml)
-    #[clap(long = "conf", parse(from_os_str))]
+    #[clap(long = "conf", value_parser)]
     config: Option<PathBuf>,
 }
 

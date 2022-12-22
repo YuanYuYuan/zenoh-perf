@@ -44,7 +44,7 @@ struct Opt {
     print: bool,
 
     /// configuration file (json5 or yaml)
-    #[clap(long = "conf", parse(from_os_str))]
+    #[clap(long = "conf", value_parser)]
     config: Option<PathBuf>,
 }
 

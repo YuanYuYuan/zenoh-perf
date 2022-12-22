@@ -28,11 +28,11 @@ struct Opt {
     connect: Option<Vec<EndPoint>>,
 
     /// peer, router, or client
-    #[clap(short, long, possible_values = ["client", "peer"])]
+    #[clap(short, long)]
     mode: WhatAmI,
 
     /// configuration file (json5 or yaml)
-    #[clap(long = "conf", parse(from_os_str))]
+    #[clap(long = "conf", value_parser)]
     config: Option<PathBuf>,
 }
 

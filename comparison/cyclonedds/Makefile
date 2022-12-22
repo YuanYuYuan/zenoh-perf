@@ -1,19 +1,19 @@
 all: install build_cyclonedds build_throughput build_latency
 
 install:
-	@git -C cyclonedds pull || git clone https://github.com/eclipse-cyclonedds/cyclonedds
+	@git -C cyclonedds checkout 0.10.2rc1 &> /dev/null || git clone https://github.com/eclipse-cyclonedds/cyclonedds -b 0.10.2rc1
 
 build_cyclonedds:
-	@cmake -S cyclonedds -B build -D CMAKE_INSTALL_PREFIX=install -D CMAKE_BUILD_TYPE=Release
+	@cmake -Scyclonedds -B build -DCMAKE_INSTALL_PREFIX=install -DCMAKE_BUILD_TYPE=Release
 	@cmake --build build --target install --config Release -j
 
 build_throughput:
-	@cmake -S throughput -B throughput/target -D CMAKE_PREFIX_PATH=../install -D CMAKE_BUILD_TYPE=Release
+	@cmake -Sthroughput -Bthroughput/target -DCMAKE_PREFIX_PATH=../install -DCMAKE_BUILD_TYPE=Release
 	@cmake --build throughput/target --config Release -j
 
 build_latency:
-	@cmake -S latency -B latency/target -D CMAKE_PREFIX_PATH=../install -D CMAKE_BUILD_TYPE=Release
+	@cmake -Slatency -Blatency/target -DCMAKE_PREFIX_PATH=../install -DCMAKE_BUILD_TYPE=Release
 	@cmake --build latency/target --config Release -j
 
 clean:
-	@rm -r build install throughput/target latency/target
+	@rm -rf install build throughput/target latency/target &> /dev/null

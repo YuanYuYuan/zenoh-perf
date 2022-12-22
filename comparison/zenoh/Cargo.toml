@@ -27,14 +27,11 @@ futures = "0.3.24"
 [features]
 shared-memory = ["zenoh/shared-memory"]
 
-[profile.release]
-debug=false
-lto="fat"
-codegen-units=1
-opt-level=3
-panic="abort"
-
 [[bin]]
 name = "zenoh_pub_shm"
 path = "./src/bin/zenoh_pub_shm.rs"
 required-features = ["shared-memory"]
+
+[[bin]]
+name = "zenoh_pub_thr"
+path = "./src/bin/zenoh_pub_thr.rs"

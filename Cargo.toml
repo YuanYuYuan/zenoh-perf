@@ -18,6 +18,8 @@ members = [
   "latency",
   "query",
   "overhead",
+  "comparison/kafka",
+  "comparison/zenoh"
 ]
 
 exclude = ["comparison/zenoh-kafka-mqtt"]

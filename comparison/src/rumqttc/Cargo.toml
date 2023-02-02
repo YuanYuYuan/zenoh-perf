@@ -1,0 +1,35 @@
+[package]
+name = "rumqttc-test"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "rumqttc_pub_thr"
+path = "src/rumqttc_pub_thr/main.rs"
+
+[[bin]]
+name = "rumqttc_sub_thr"
+path = "src/rumqttc_sub_thr/main.rs"
+
+[[bin]]
+name = "rumqttc_ping"
+path = "src/rumqttc_ping/main.rs"
+
+[[bin]]
+name = "rumqttc_pong"
+path = "src/rumqttc_pong/main.rs"
+
+[dependencies]
+anyhow = "1.0.58"
+chrono = "0.4.19"
+clap = { version = "3.2.11", features = ["derive"] }
+futures = "0.3.21"
+humantime = "2.1.0"
+itertools = "0.10.3"
+log = "0.4.17"
+noisy_float = { version = "0.2.0" }
+num-traits = "0.2.15"
+once_cell = "1.13.0"
+pretty_env_logger = "0.4.0"
+rumqttc = "0.17.0"
+tokio = { version = "1.22.0", features = ["rt-multi-thread", "macros", "time"] }

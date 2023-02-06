@@ -15,16 +15,16 @@ use std::collections::HashMap;
 use std::sync::{Arc, Barrier, Mutex};
 use std::time::Instant;
 use structopt::StructOpt;
-use zenoh::net::protocol::core::{
-    Channel, CongestionControl, PeerId, QueryConsolidation, QueryTarget, ResKey, SubInfo, ZInt,
+use zenoh::buffers::ZBuf;
+use zenoh::prelude::SplitBuffer;
+use zenoh::runtime::Runtime;
+use zenoh_link::EndPoint;
+use zenoh_protocol::proto::{DataInfo, QueryBody, RoutingContext};
+use zenoh_protocol_core::{
+    Channel, CongestionControl, ConsolidationMode, QueryTarget, QueryableInfo, SubInfo, WhatAmI,
+    WireExpr, ZInt, ZenohId,
 };
-use zenoh::net::protocol::io::ZBuf;
-use zenoh::net::protocol::proto::{DataInfo, RoutingContext};
-use zenoh::net::runtime::Runtime;
-use zenoh::net::transport::Primitives;
-use zenoh_util::properties::config::{
-    ConfigProperties, ZN_MODE_KEY, ZN_MULTICAST_SCOUTING_KEY, ZN_PEER_KEY,
-};
+use zenoh_transport::Primitives;
 
 type Pending = Arc<Mutex<HashMap<u64, (Instant, Arc<Barrier>)>>>;
 
@@ -45,30 +45,30 @@ impl QueryPrimitives {
 }
 
 impl Primitives for QueryPrimitives {
-    fn decl_resource(&self, _rid: ZInt, _reskey: &ResKey) {}
+    fn decl_resource(&self, _rid: ZInt, _key_expr: &WireExpr) {}
     fn forget_resource(&self, _rid: ZInt) {}
-    fn decl_publisher(&self, _reskey: &ResKey, _routing_context: Option<RoutingContext>) {}
-    fn forget_publisher(&self, _reskey: &ResKey, _routing_context: Option<RoutingContext>) {}
+    fn decl_publisher(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
+    fn forget_publisher(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
     fn decl_subscriber(
         &self,
-        _reskey: &ResKey,
+        _key_expr: &WireExpr,
         _sub_info: &SubInfo,
         _routing_context: Option<RoutingContext>,
     ) {
     }
-    fn forget_subscriber(&self, _reskey: &ResKey, _routing_context: Option<RoutingContext>) {}
+    fn forget_subscriber(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
     fn decl_queryable(
         &self,
-        _reskey: &ResKey,
-        _kind: ZInt,
+        _key_expr: &WireExpr,
+        _qabl_info: &QueryableInfo,
         _routing_context: Option<RoutingContext>,
     ) {
     }
-    fn forget_queryable(&self, _reskey: &ResKey, _routing_context: Option<RoutingContext>) {}
+    fn forget_queryable(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
 
     fn send_data(
         &self,
-        _reskey: &ResKey,
+        _key_expr: &WireExpr,
         _payload: ZBuf,
         _channel: Channel,
         _congestion_control: CongestionControl,
@@ -78,20 +78,20 @@ impl Primitives for QueryPrimitives {
     }
     fn send_query(
         &self,
-        _reskey: &ResKey,
-        _predicate: &str,
+        _key_expr: &WireExpr,
+        _parameters: &str,
         _qid: ZInt,
         _target: QueryTarget,
-        _consolidation: QueryConsolidation,
+        _consolidation: ConsolidationMode,
+        _body: Option<QueryBody>,
         _routing_context: Option<RoutingContext>,
     ) {
     }
     fn send_reply_data(
         &self,
         qid: ZInt,
-        _source_kind: ZInt,
-        _replier_id: PeerId,
-        _reskey: ResKey,
+        _replier_id: ZenohId,
+        _key_expr: WireExpr,
         _info: Option<DataInfo>,
         payload: ZBuf,
     ) {
@@ -111,7 +111,7 @@ impl Primitives for QueryPrimitives {
     fn send_pull(
         &self,
         _is_final: bool,
-        _reskey: &ResKey,
+        _key_expr: &WireExpr,
         _pull_id: ZInt,
         _max_samples: &Option<ZInt>,
     ) {
@@ -122,10 +122,10 @@ impl Primitives for QueryPrimitives {
 #[derive(Debug, StructOpt)]
 #[structopt(name = "r_query")]
 struct Opt {
-    #[structopt(short = "l", long = "locator")]
-    locator: String,
+    #[structopt(short = "l", long = "locator", value_delimiter = ",")]
+    locator: Vec<EndPoint>,
     #[structopt(short = "m", long = "mode")]
-    mode: String,
+    mode: WhatAmI,
     #[structopt(short = "n", long = "name")]
     name: String,
     #[structopt(short = "s", long = "scenario")]
@@ -140,15 +140,14 @@ async fn main() {
     // Parse the args
     let opt = Opt::from_args();
 
-    let mut config = ConfigProperties::default();
-    config.insert(ZN_MODE_KEY, opt.mode.clone());
-
-    config.insert(ZN_MULTICAST_SCOUTING_KEY, "false".to_string());
-    config.insert(ZN_PEER_KEY, opt.locator);
+    let mut config = zenoh::prelude::Config::default();
+    config.set_mode(Some(opt.mode)).unwrap();
+    config.scouting.multicast.set_enabled(Some(false)).unwrap();
+    config.connect.endpoints.extend(opt.locator);
 
     let pending: Pending = Arc::new(Mutex::new(HashMap::new()));
 
-    let runtime = Runtime::new(0u8, config, None).await.unwrap();
+    let runtime = Runtime::new(config).await.unwrap();
     let rx_primitives = Arc::new(QueryPrimitives::new(
         opt.scenario,
         opt.name,
@@ -159,11 +158,12 @@ async fn main() {
     let barrier = Arc::new(Barrier::new(2));
     let mut count: u64 = 0;
     loop {
-        let reskey = ResKey::RName("/test/query".to_string());
-        let predicate = "";
+        let key_expr = WireExpr::from("/test/query");
+        let parameters = "";
         let qid = count;
         let target = QueryTarget::default();
-        let consolidation = QueryConsolidation::default();
+        let consolidation = ConsolidationMode::None;
+        let body = None;
         let routing_context = None;
 
         // Insert the pending query
@@ -172,11 +172,12 @@ async fn main() {
             .unwrap()
             .insert(count, (Instant::now(), barrier.clone()));
         tx_primitives.send_query(
-            &reskey,
-            predicate,
+            &key_expr,
+            parameters,
             qid,
-            target.clone(),
-            consolidation.clone(),
+            target,
+            consolidation,
+            body,
             routing_context,
         );
         // Wait for the reply to arrive

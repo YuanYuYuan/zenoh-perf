@@ -20,7 +20,7 @@ use std::sync::{Arc, Barrier, Mutex};
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
 use zenoh::net::link::{EndPoint, Link};
-use zenoh::net::protocol::core::{whatami, QueryConsolidation, QueryTarget, ResKey};
+use zenoh::net::protocol::core::{whatami, ConsolidationMode, QueryTarget, ResKey};
 use zenoh::net::protocol::proto::{Data, ZenohBody, ZenohMessage};
 use zenoh::net::transport::*;
 use zenoh_util::core::ZResult;
@@ -174,7 +174,7 @@ async fn main() {
         let predicate = "".to_string();
         let qid = count;
         let target = Some(QueryTarget::default());
-        let consolidation = QueryConsolidation::default();
+        let consolidation = ConsolidationMode::default();
         let routing_context = None;
         let attachment = None;
 

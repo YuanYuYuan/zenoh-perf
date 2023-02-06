@@ -102,7 +102,7 @@ async fn main() {
     env_logger::init();
 
     // Parse the args
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
 
     let contents = fs::read_to_string(opt.file).await.unwrap();
     let pkts: Vec<PcapData> = serde_json::from_str(&contents).unwrap();
@@ -139,7 +139,7 @@ async fn main() {
 
     let payload = (payload_size / data_count) as u64;
 
-    println!("Total Data messages: {}", data_count);
-    println!("Total Payload: {} bytes", payload_size);
-    println!("Per message Payload: {} bytes", payload);
+    println!("Total Data messages: {data_count}");
+    println!("Total Payload: {payload_size} bytes");
+    println!("Per message Payload: {payload} bytes");
 }

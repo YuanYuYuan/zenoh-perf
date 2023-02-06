@@ -15,21 +15,18 @@ use async_std::future;
 use async_std::task;
 use std::sync::{Arc, Mutex};
 use structopt::StructOpt;
-use zenoh::net::protocol::core::{
-    Channel, CongestionControl, PeerId, QueryConsolidation, QueryTarget, ResKey, SubInfo, ZInt,
+use zenoh::buffers::ZBuf;
+use zenoh::runtime::Runtime;
+use zenoh_link::EndPoint;
+use zenoh_protocol::proto::{DataInfo, QueryBody, RoutingContext};
+use zenoh_protocol_core::{
+    Channel, CongestionControl, ConsolidationMode, QueryTarget, QueryableInfo, SubInfo, WhatAmI,
+    WireExpr, ZInt, ZenohId,
 };
-use zenoh::net::protocol::io::ZBuf;
-use zenoh::net::protocol::proto::{DataInfo, RoutingContext};
-use zenoh::net::queryable::ALL_KINDS;
-use zenoh::net::routing::face::Face;
-use zenoh::net::runtime::Runtime;
-use zenoh::net::transport::Primitives;
-use zenoh_util::properties::config::{
-    ConfigProperties, ZN_LISTENER_KEY, ZN_MODE_KEY, ZN_MULTICAST_SCOUTING_KEY, ZN_PEER_KEY,
-};
+use zenoh_transport::Primitives;
 
 struct EvalPrimitives {
-    pid: PeerId,
+    pid: ZenohId,
     payload: usize,
     tx: Mutex<Option<Arc<Face>>>,
 }
@@ -37,7 +34,7 @@ struct EvalPrimitives {
 impl EvalPrimitives {
     fn new(payload: usize) -> EvalPrimitives {
         EvalPrimitives {
-            pid: PeerId::rand(),
+            pid: ZenohId::rand(),
             payload,
             tx: Mutex::new(None),
         }
@@ -50,30 +47,30 @@ impl EvalPrimitives {
 }
 
 impl Primitives for EvalPrimitives {
-    fn decl_resource(&self, _rid: ZInt, _reskey: &ResKey) {}
+    fn decl_resource(&self, _rid: ZInt, _key_expr: &WireExpr) {}
     fn forget_resource(&self, _rid: ZInt) {}
-    fn decl_publisher(&self, _reskey: &ResKey, _routing_context: Option<RoutingContext>) {}
-    fn forget_publisher(&self, _reskey: &ResKey, _routing_context: Option<RoutingContext>) {}
+    fn decl_publisher(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
+    fn forget_publisher(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
     fn decl_subscriber(
         &self,
-        _reskey: &ResKey,
+        _key_expr: &WireExpr,
         _sub_info: &SubInfo,
         _routing_context: Option<RoutingContext>,
     ) {
     }
-    fn forget_subscriber(&self, _reskey: &ResKey, _routing_context: Option<RoutingContext>) {}
+    fn forget_subscriber(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
     fn decl_queryable(
         &self,
-        _reskey: &ResKey,
-        _kind: ZInt,
+        _key_expr: &WireExpr,
+        _qable_info: &QueryableInfo,
         _routing_context: Option<RoutingContext>,
     ) {
     }
-    fn forget_queryable(&self, _reskey: &ResKey, _routing_context: Option<RoutingContext>) {}
+    fn forget_queryable(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
 
     fn send_data(
         &self,
-        _reskey: &ResKey,
+        _key_expr: &WireExpr,
         _payload: ZBuf,
         _channel: Channel,
         _congestion_control: CongestionControl,
@@ -83,14 +80,15 @@ impl Primitives for EvalPrimitives {
     }
     fn send_query(
         &self,
-        reskey: &ResKey,
+        key_expr: &WireExpr,
         _predicate: &str,
         qid: ZInt,
         _target: QueryTarget,
-        _consolidation: QueryConsolidation,
+        _consolidation: ConsolidationMode,
+        _body: Option<QueryBody>,
         _routing_context: Option<RoutingContext>,
     ) {
-        let reskey = reskey.clone();
+        let key_expr = key_expr.clone();
         let source_kind = 0;
         let pid = self.pid;
         let info = None;
@@ -99,16 +97,15 @@ impl Primitives for EvalPrimitives {
 
         // @TODO: once the router is re-entrant remove the task spawn
         task::spawn(async move {
-            tx_primitives.send_reply_data(qid, source_kind, pid, reskey, info, payload);
+            tx_primitives.send_reply_data(qid, source_kind, pid, key_expr, info, payload);
             tx_primitives.send_reply_final(qid);
         });
     }
     fn send_reply_data(
         &self,
         _qid: ZInt,
-        _source_kind: ZInt,
-        _replier_id: PeerId,
-        _reskey: ResKey,
+        _replier_id: ZenohId,
+        _key_expr: WireExpr,
         _info: Option<DataInfo>,
         _payload: ZBuf,
     ) {
@@ -117,7 +114,7 @@ impl Primitives for EvalPrimitives {
     fn send_pull(
         &self,
         _is_final: bool,
-        _reskey: &ResKey,
+        _key_expr: &WireExpr,
         _pull_id: ZInt,
         _max_samples: &Option<ZInt>,
     ) {
@@ -128,10 +125,10 @@ impl Primitives for EvalPrimitives {
 #[derive(Debug, StructOpt)]
 #[structopt(name = "r_eval")]
 struct Opt {
-    #[structopt(short = "l", long = "locator")]
-    locator: String,
+    #[structopt(short = "l", long = "locator", value_delimiter = ",")]
+    locator: Vec<EndPoint>,
     #[structopt(short = "m", long = "mode")]
-    mode: String,
+    mode: WhatAmI,
     #[structopt(short = "p", long = "payload")]
     payload: usize,
 }
@@ -144,26 +141,25 @@ async fn main() {
     // Parse the args
     let opt = Opt::from_args();
 
-    let mut config = ConfigProperties::default();
-    config.insert(ZN_MODE_KEY, opt.mode.clone());
+    let mut config = zenoh::prelude::Config::default();
+    config.set_mode(Some(opt.mode)).unwrap();
+    config.scouting.multicast.set_enabled(Some(false)).unwrap();
 
-    config.insert(ZN_MULTICAST_SCOUTING_KEY, "false".to_string());
-    match opt.mode.as_str() {
-        "peer" | "router" => config.insert(ZN_LISTENER_KEY, opt.locator),
-        "client" => config.insert(ZN_PEER_KEY, opt.locator),
-        _ => panic!("Unsupported mode: {}", opt.mode),
+    match opt.mode {
+        WhatAmI::Peer | WhatAmI::Router => config.listen.endpoints.extend(opt.locator),
+        WhatAmI::Client => config.connect.endpoints.extend(opt.locator),
     };
 
-    let runtime = Runtime::new(0u8, config, None).await.unwrap();
+    let runtime = Runtime::new(config).await.unwrap();
 
     let rx_primitives = Arc::new(EvalPrimitives::new(opt.payload));
     let tx_primitives = runtime.router.new_primitives(rx_primitives.clone());
     rx_primitives.set_tx(tx_primitives.clone());
 
-    let rid = ResKey::RName("/test/query".to_string());
-    let kind = ALL_KINDS;
+    let rid = WireExpr::from("/test/query");
     let routing_context = None;
-    tx_primitives.decl_queryable(&rid, kind, routing_context);
+    let qable_info = QueryableInfo::default();
+    tx_primitives.decl_queryable(&rid, &qable_info, routing_context);
 
     // Stop forever
     future::pending::<()>().await;

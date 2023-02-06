@@ -29,7 +29,7 @@ struct Opt {
     endpoint: Option<String>,
 
     /// peer or client
-    #[clap(short, long, possible_values = ["peer", "client"])]
+    #[clap(short, long, value_parser = ["peer", "client"])]
     mode: String,
 
     /// payload size (bytes)
@@ -162,21 +162,19 @@ async fn parallel(opt: Opt, config: Config) {
                 .res()
                 .await
                 .unwrap();
+        } else if key_expr_ping.as_ref().is_some() {
+            session
+                .put(key_expr_ping.as_ref().unwrap(), payload)
+                .res()
+                .await
+                .unwrap();
         } else {
-            if key_expr_ping.as_ref().is_some() {
-                session
-                    .put(key_expr_ping.as_ref().unwrap(), payload)
-                    .res()
-                    .await
-                    .unwrap();
-            } else {
-                session
-                    .put(KEY_EXPR_PING, payload)
-                    .congestion_control(CongestionControl::Block)
-                    .res()
-                    .await
-                    .unwrap();
-            }
+            session
+                .put(KEY_EXPR_PING, payload)
+                .congestion_control(CongestionControl::Block)
+                .res()
+                .await
+                .unwrap();
         }
         task::sleep(Duration::from_secs_f64(opt.interval)).await;
         count += 1;
@@ -254,21 +252,19 @@ async fn single(opt: Opt, config: Config) {
                 .res()
                 .await
                 .unwrap();
+        } else if key_expr_ping.as_ref().is_some() {
+            session
+                .put(key_expr_ping.as_ref().unwrap(), payload)
+                .res()
+                .await
+                .unwrap();
         } else {
-            if key_expr_ping.as_ref().is_some() {
-                session
-                    .put(key_expr_ping.as_ref().unwrap(), payload)
-                    .res()
-                    .await
-                    .unwrap();
-            } else {
-                session
-                    .put(KEY_EXPR_PING, payload)
-                    .congestion_control(CongestionControl::Block)
-                    .res()
-                    .await
-                    .unwrap();
-            }
+            session
+                .put(KEY_EXPR_PING, payload)
+                .congestion_control(CongestionControl::Block)
+                .res()
+                .await
+                .unwrap();
         }
 
         match sub.recv_async().await {

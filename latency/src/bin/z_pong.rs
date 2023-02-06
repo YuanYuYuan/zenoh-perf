@@ -25,7 +25,7 @@ struct Opt {
     endpoint: String,
 
     /// peer or client
-    #[clap(short, long, possible_values = ["peer", "client"])]
+    #[clap(short, long, value_parser = ["peer", "client"])]
     mode: String,
 
     /// declare a numerical ID for key expression
@@ -121,21 +121,19 @@ async fn main() {
     while let Ok(sample) = sub.recv_async().await {
         if publisher.as_ref().is_some() {
             publisher.as_ref().unwrap().put(sample).res().await.unwrap();
+        } else if key_expr_pong.as_ref().is_some() {
+            session
+                .put(key_expr_pong.as_ref().unwrap(), sample)
+                .res()
+                .await
+                .unwrap();
         } else {
-            if key_expr_pong.as_ref().is_some() {
-                session
-                    .put(key_expr_pong.as_ref().unwrap(), sample)
-                    .res()
-                    .await
-                    .unwrap();
-            } else {
-                session
-                    .put(KEY_EXPR_PONG, sample)
-                    .congestion_control(CongestionControl::Block)
-                    .res()
-                    .await
-                    .unwrap();
-            }
+            session
+                .put(KEY_EXPR_PONG, sample)
+                .congestion_control(CongestionControl::Block)
+                .res()
+                .await
+                .unwrap();
         }
     }
 

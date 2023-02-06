@@ -13,16 +13,14 @@
 //
 use async_std::future;
 use async_std::sync::Arc;
+use zenoh::buffers::ZBuf;
+use zenoh_link::{Link, EndPoint};
+use zenoh_protocol::proto::{ZenohMessage, Query, ReplyContext, ZenohBody};
+use zenoh_protocol_core::{Channel, Priority, Reliability, CongestionControl, WireExpr};
+use zenoh_transport::{TransportEventHandler, TransportPeer, TransportUnicast, TransportPeerEventHandler, TransportMulticast, TransportMulticastEventHandler, TransportManager, TransportManagerConfig};
 use std::any::Any;
 use std::path::PathBuf;
 use structopt::StructOpt;
-use zenoh::net::link::{EndPoint, Link};
-use zenoh::net::protocol::core::{
-    whatami, Channel, CongestionControl, Priority, Reliability, ResKey,
-};
-use zenoh::net::protocol::io::ZBuf;
-use zenoh::net::protocol::proto::{Query, ReplyContext, ZenohBody, ZenohMessage};
-use zenoh::net::transport::*;
 use zenoh_util::core::ZResult;
 use zenoh_util::properties::{IntKeyProperties, Properties};
 
@@ -76,7 +74,7 @@ impl TransportPeerEventHandler for MyMH {
                     reliability: Reliability::Reliable,
                 };
                 let congestion_control = CongestionControl::Block;
-                let key = ResKey::RName("/test/query".to_string());
+                let key = WireExpr::from("/test/query");
                 let info = None;
                 let payload = ZBuf::from(vec![0u8; self.payload]);
                 let routing_context = None;
@@ -112,8 +110,8 @@ impl TransportPeerEventHandler for MyMH {
 #[derive(Debug, StructOpt)]
 #[structopt(name = "s_eval")]
 struct Opt {
-    #[structopt(short = "l", long = "locator")]
-    locator: EndPoint,
+    #[structopt(short = "l", long = "locator", value_delimiter = ",")]
+    locator: Vec<EndPoint>,
     #[structopt(short = "m", long = "mode")]
     mode: String,
     #[structopt(short = "p", long = "payload")]

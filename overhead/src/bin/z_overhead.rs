@@ -48,7 +48,7 @@ async fn main() {
     env_logger::init();
 
     // Parse the args
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
 
     let mut config = Config::default();
     config.set_mode(Some(opt.mode)).unwrap();
@@ -91,7 +91,7 @@ async fn main() {
                 task::sleep(Duration::from_secs(1)).await;
                 let c = count.swap(0, Ordering::Relaxed);
                 if c > 0 {
-                    println!("{} msg/s", c);
+                    println!("{c} msg/s");
                 }
             }
         });

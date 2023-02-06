@@ -11,22 +11,22 @@
 // Contributors:
 //   ADLINK zenoh team, <zenoh@adlink-labs.tech>
 //
-use async_std::stream::StreamExt;
 use async_std::sync::Arc;
 use async_std::task;
-use std::convert::TryInto;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
-use zenoh::*;
+use zenoh::prelude::r#async::*;
+use zenoh_link::EndPoint;
+use zenoh_protocol_core::WhatAmI;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "z_query")]
+#[structopt(name = "z_get_thr")]
 struct Opt {
     #[structopt(short = "l", long = "locator")]
-    locator: String,
+    locator: Vec<EndPoint>,
     #[structopt(short = "m", long = "mode")]
-    mode: String,
+    mode: WhatAmI,
     #[structopt(short = "n", long = "name")]
     name: String,
     #[structopt(short = "s", long = "scenario")]
@@ -43,14 +43,12 @@ async fn main() {
     // Parse the args
     let opt = Opt::from_args();
 
-    let mut config = Properties::default();
-    config.insert("mode".to_string(), opt.mode.clone());
+    let mut config: Config = Config::default();
+    config.set_mode(Some(opt.mode)).unwrap();
+    config.scouting.multicast.set_enabled(Some(false)).unwrap();
+    config.connect.endpoints.extend(opt.locator.clone());
 
-    config.insert("multicast_scouting".to_string(), "false".to_string());
-    config.insert("peer".to_string(), opt.locator.clone());
-
-    let zenoh = Zenoh::new(config.into()).await.unwrap();
-    let workspace = zenoh.workspace(None).await.unwrap();
+    let session = zenoh::open(config).res().await.unwrap();
 
     let rtt = Arc::new(AtomicUsize::new(0));
     let counter = Arc::new(AtomicUsize::new(0));
@@ -80,10 +78,9 @@ async fn main() {
     });
 
     loop {
-        let selector = "/test/query".to_string();
         let now = Instant::now();
-        let mut data_stream = workspace.get(&selector.try_into().unwrap()).await.unwrap();
-        while data_stream.next().await.is_some() {}
+        let data_stream = session.get("/test/query").res().await.unwrap();
+        while data_stream.recv_async().await.is_ok() {}
 
         rtt.fetch_add(now.elapsed().as_micros() as usize, Ordering::Relaxed);
         counter.fetch_add(1, Ordering::Relaxed);

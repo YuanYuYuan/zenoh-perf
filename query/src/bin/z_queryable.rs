@@ -18,7 +18,7 @@ use zenoh::{config::Config, prelude::Sample};
 use zenoh_protocol_core::{EndPoint, WhatAmI};
 
 #[derive(Debug, Parser)]
-#[clap(name = "z_eval")]
+#[clap(name = "z_queryable")]
 struct Opt {
     /// endpoint(s), e.g. --endpoint tcp/127.0.0.1:7447,tcp/127.0.0.1:7448
     #[clap(short, long, value_delimiter = ',')]

@@ -13,12 +13,12 @@
 //
 use clap::Parser;
 use std::time::Instant;
-use zenoh::config::Config;
-use zenoh_buffers::SplitBuffer;
+use zenoh::config::{Config, ModeDependentValue};
+use zenoh::prelude::r#async::*;
 use zenoh_protocol_core::{EndPoint, WhatAmI};
 
 #[derive(Debug, Parser)]
-#[clap(name = "z_query")]
+#[clap(name = "z_get")]
 struct Opt {
     /// endpoint(s), e.g. --endpoint tcp/127.0.0.1:7447,tcp/127.0.0.1:7448
     #[clap(short, long)]
@@ -50,22 +50,27 @@ async fn main() {
     let config = {
         let mut config: Config = Config::default();
         config.set_mode(Some(mode)).unwrap();
-        config.set_add_timestamp(Some(false)).unwrap();
+        config
+            .timestamping
+            .set_enabled(Some(ModeDependentValue::Unique(false)))
+            .unwrap();
         config.scouting.multicast.set_enabled(Some(false)).unwrap();
         config.connect.endpoints.extend(endpoint);
         config
     };
 
-    let session = zenoh::open(config).await.unwrap();
+    let session = zenoh::open(config).res().await.unwrap();
 
     let mut count: u64 = 0;
     loop {
         let now = Instant::now();
-        let mut data_stream = session.get("/test/query").await.unwrap();
+        let data_stream = session.get("/test/query").res().await.unwrap();
 
         let mut payload: usize = 0;
-        while let Some(reply) = data_stream.next().await {
-            payload += reply.sample.value.payload.len();
+        while let Ok(reply) = data_stream.recv_async().await {
+            if let Ok(sample) = reply.sample {
+                payload += sample.value.payload.len();
+            }
         }
 
         println!(

@@ -11,7 +11,6 @@
 // Contributors:
 //   ADLINK zenoh team, <zenoh@adlink-labs.tech>
 //
-use async_std::stream::StreamExt;
 use clap::Parser;
 use std::time::Instant;
 use zenoh::config::Config;

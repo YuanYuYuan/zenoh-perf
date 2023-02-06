@@ -13,16 +13,18 @@
 //
 use async_std::future;
 use async_std::sync::Arc;
-use zenoh::buffers::ZBuf;
-use zenoh_link::{Link, EndPoint};
-use zenoh_protocol::proto::{ZenohMessage, Query, ReplyContext, ZenohBody};
-use zenoh_protocol_core::{Channel, Priority, Reliability, CongestionControl, WireExpr};
-use zenoh_transport::{TransportEventHandler, TransportPeer, TransportUnicast, TransportPeerEventHandler, TransportMulticast, TransportMulticastEventHandler, TransportManager, TransportManagerConfig};
 use std::any::Any;
 use std::path::PathBuf;
 use structopt::StructOpt;
-use zenoh_util::core::ZResult;
-use zenoh_util::properties::{IntKeyProperties, Properties};
+use zenoh::buffers::ZBuf;
+use zenoh_core::zresult::ZResult;
+use zenoh_link::{EndPoint, Link};
+use zenoh_protocol::proto::{Query, ReplyContext, ZenohBody, ZenohMessage};
+use zenoh_protocol_core::{Channel, CongestionControl, Priority, Reliability, WhatAmI, WireExpr};
+use zenoh_transport::{
+    TransportEventHandler, TransportManager, TransportMulticast, TransportMulticastEventHandler,
+    TransportPeer, TransportPeerEventHandler, TransportUnicast,
+};
 
 // Transport Handler for the peer
 struct MySH {
@@ -110,10 +112,10 @@ impl TransportPeerEventHandler for MyMH {
 #[derive(Debug, StructOpt)]
 #[structopt(name = "s_eval")]
 struct Opt {
-    #[structopt(short = "l", long = "locator", value_delimiter = ",")]
-    locator: Vec<EndPoint>,
+    #[structopt(short = "l", long = "locator")]
+    locator: EndPoint,
     #[structopt(short = "m", long = "mode")]
-    mode: String,
+    mode: WhatAmI,
     #[structopt(short = "p", long = "payload")]
     payload: usize,
     #[structopt(long = "conf", parse(from_os_str))]
@@ -128,25 +130,17 @@ async fn main() {
     // Parse the args
     let opt = Opt::from_args();
 
-    let whatami = whatami::parse(opt.mode.as_str()).unwrap();
-
     let bc = match opt.config.as_ref() {
-        Some(f) => {
-            let config = async_std::fs::read_to_string(f).await.unwrap();
-            let properties = Properties::from(config);
-            let int_props = IntKeyProperties::from(properties);
-            TransportManagerConfig::builder()
-                .from_config(&int_props)
-                .await
-                .unwrap()
-        }
-        None => TransportManagerConfig::builder().whatami(whatami),
+        Some(f) => TransportManager::builder()
+            .from_config(&zenoh::config::Config::from_file(f).unwrap())
+            .await
+            .unwrap(),
+        None => TransportManager::builder().whatami(opt.mode),
     };
-    let config = bc.build(Arc::new(MySH::new(opt.payload)));
-    let manager = TransportManager::new(config);
+    let manager = bc.build(Arc::new(MySH::new(opt.payload))).unwrap();
 
     // Connect to the peer or listen
-    if whatami == whatami::PEER {
+    if opt.mode == WhatAmI::Peer {
         manager.add_listener(opt.locator).await.unwrap();
     } else {
         let _session = manager.open_transport(opt.locator).await.unwrap();

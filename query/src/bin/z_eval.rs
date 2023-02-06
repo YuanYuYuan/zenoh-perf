@@ -11,16 +11,17 @@
 // Contributors:
 //   ADLINK zenoh team, <zenoh@adlink-labs.tech>
 //
-use async_std::stream::StreamExt;
 use clap::Parser;
-use zenoh::{config::Config, prelude::Sample, queryable::EVAL};
+use zenoh::key_expr::KeyExpr;
+use zenoh::prelude::r#async::*;
+use zenoh::{config::Config, prelude::Sample};
 use zenoh_protocol_core::{EndPoint, WhatAmI};
 
 #[derive(Debug, Parser)]
 #[clap(name = "z_eval")]
 struct Opt {
     /// endpoint(s), e.g. --endpoint tcp/127.0.0.1:7447,tcp/127.0.0.1:7448
-    #[clap(short, long)]
+    #[clap(short, long, value_delimiter = ',')]
     endpoint: Vec<EndPoint>,
 
     #[clap(short, long)]
@@ -55,11 +56,14 @@ async fn main() {
         config
     };
 
-    let session = zenoh::open(config).await.unwrap();
-    let mut queryable = session.queryable(KEY_EXPR).kind(EVAL).await.unwrap();
-    while let Some(query) = queryable.next().await {
+    let session = zenoh::open(config).res().await.unwrap();
+    let key_expr = KeyExpr::new(KEY_EXPR).unwrap();
+    let queryable = session.declare_queryable(&key_expr).res().await.unwrap();
+    while let Ok(query) = queryable.recv_async().await {
         query
-            .reply_async(Sample::new(KEY_EXPR, vec![0u8; payload]))
-            .await;
+            .reply(Ok(Sample::new(key_expr.clone(), vec![0u8; payload])))
+            .res()
+            .await
+            .unwrap();
     }
 }

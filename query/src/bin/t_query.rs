@@ -17,12 +17,15 @@ use std::path::PathBuf;
 use std::sync::{Arc, Barrier, Mutex};
 use std::time::Instant;
 use structopt::StructOpt;
-use zenoh::net::link::{EndPoint, Link};
-use zenoh::net::protocol::core::{whatami, ConsolidationMode, QueryTarget, ResKey};
-use zenoh::net::protocol::proto::{Data, ZenohBody, ZenohMessage};
-use zenoh::net::transport::*;
-use zenoh_util::core::ZResult;
-use zenoh_util::properties::{IntKeyProperties, Properties};
+use zenoh::prelude::SplitBuffer;
+use zenoh_core::zresult::ZResult;
+use zenoh_link::{EndPoint, Link};
+use zenoh_protocol::proto::{Data, ZenohBody, ZenohMessage};
+use zenoh_protocol_core::{ConsolidationMode, QueryTarget, WhatAmI, WireExpr};
+use zenoh_transport::{
+    TransportEventHandler, TransportManager, TransportMulticast, TransportMulticastEventHandler,
+    TransportPeer, TransportPeerEventHandler, TransportUnicast,
+};
 
 type Pending = Arc<Mutex<HashMap<u64, (Instant, Arc<Barrier>)>>>;
 
@@ -127,7 +130,7 @@ struct Opt {
     #[structopt(short = "l", long = "locator")]
     locator: EndPoint,
     #[structopt(short = "m", long = "mode")]
-    mode: String,
+    mode: WhatAmI,
     #[structopt(short = "n", long = "name")]
     name: String,
     #[structopt(short = "s", long = "scenario")]
@@ -144,28 +147,22 @@ async fn main() {
     // Parse the args
     let opt = Opt::from_args();
 
-    let whatami = whatami::parse(opt.mode.as_str()).unwrap();
-
     let pending: Pending = Arc::new(Mutex::new(HashMap::new()));
 
     let bc = match opt.config.as_ref() {
-        Some(f) => {
-            let config = async_std::fs::read_to_string(f).await.unwrap();
-            let properties = Properties::from(config);
-            let int_props = IntKeyProperties::from(properties);
-            TransportManagerConfig::builder()
-                .from_config(&int_props)
-                .await
-                .unwrap()
-        }
-        None => TransportManagerConfig::builder().whatami(whatami),
+        Some(f) => TransportManager::builder()
+            .from_config(&zenoh::config::Config::from_file(f).unwrap())
+            .await
+            .unwrap(),
+        None => TransportManager::builder().whatami(opt.mode),
     };
-    let config = bc.build(Arc::new(MySH::new(
-        opt.scenario.clone(),
-        opt.name.clone(),
-        pending.clone(),
-    )));
-    let manager = TransportManager::new(config);
+    let manager = bc
+        .build(Arc::new(MySH::new(
+            opt.scenario.clone(),
+            opt.name.clone(),
+            pending.clone(),
+        )))
+        .unwrap();
 
     // Connect to publisher
     let session = manager.open_transport(opt.locator).await.unwrap();
@@ -173,11 +170,12 @@ async fn main() {
     let mut count: u64 = 0;
     loop {
         // Create and send the message
-        let key = ResKey::RName("/test/query".to_string());
+        let key = WireExpr::from("/test/query");
         let predicate = "".to_string();
         let qid = count;
         let target = Some(QueryTarget::default());
-        let consolidation = ConsolidationMode::default();
+        let consolidation = ConsolidationMode::None;
+        let body = None;
         let routing_context = None;
         let attachment = None;
 
@@ -187,6 +185,7 @@ async fn main() {
             qid,
             target,
             consolidation,
+            body,
             routing_context,
             attachment,
         );

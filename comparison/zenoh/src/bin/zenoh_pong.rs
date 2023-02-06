@@ -86,5 +86,5 @@ fn main() {
         .callback(move |sample| publisher.put(sample.value).res().unwrap())
         .res()
         .unwrap();
-    loop {}
+    std::thread::park();
 }

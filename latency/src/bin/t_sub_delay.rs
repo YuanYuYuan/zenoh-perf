@@ -17,13 +17,16 @@ use clap::Parser;
 use std::any::Any;
 use std::str::FromStr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use zenoh::net::link::Link;
-use zenoh::net::protocol::io::reader::{HasReader, Reader};
-use zenoh::net::protocol::io::SplitBuffer;
-use zenoh::net::protocol::proto::{Data, ZenohBody, ZenohMessage};
-use zenoh::net::transport::*;
+use zenoh::buffers::reader::{HasReader, Reader};
+use zenoh::prelude::SplitBuffer;
 use zenoh_core::Result as ZResult;
+use zenoh_link::Link;
+use zenoh_protocol::proto::{Data, ZenohBody, ZenohMessage};
 use zenoh_protocol_core::{EndPoint, WhatAmI};
+use zenoh_transport::{
+    TransportEventHandler, TransportMulticast, TransportMulticastEventHandler, TransportPeer,
+    TransportPeerEventHandler, TransportUnicast, TransportManager,
+};
 
 // Transport Handler for the peer
 struct MySH;

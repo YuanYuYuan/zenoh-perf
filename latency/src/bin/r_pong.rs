@@ -14,16 +14,13 @@
 use async_std::future;
 use clap::Parser;
 use std::sync::{Arc, Mutex};
-use zenoh::config::Config;
-use zenoh::net::protocol::io::ZBuf;
-use zenoh::net::protocol::proto::{DataInfo, RoutingContext};
-use zenoh::net::routing::face::Face;
-use zenoh::net::runtime::Runtime;
-use zenoh::net::transport::Primitives;
+use zenoh::{buffers::ZBuf, config::Config, runtime::Runtime};
+use zenoh_protocol::proto::{DataInfo, QueryBody, RoutingContext};
 use zenoh_protocol_core::{
-    Channel, CongestionControl, ConsolidationStrategy, KeyExpr, PeerId, QueryTarget, QueryableInfo,
-    Reliability, SubInfo, SubMode, WhatAmI, ZInt,
+    Channel, CongestionControl, ConsolidationMode, QueryTarget, QueryableInfo, Reliability,
+    SubInfo, SubMode, WhatAmI, WireExpr, ZInt, ZenohId,
 };
+use zenoh_transport::Primitives;
 
 struct LatencyPrimitives {
     tx: Mutex<Option<Arc<Face>>>,
@@ -43,37 +40,30 @@ impl LatencyPrimitives {
 }
 
 impl Primitives for LatencyPrimitives {
-    fn decl_resource(&self, _expr_id: ZInt, _key_expr: &KeyExpr) {}
+    fn decl_resource(&self, _expr_id: ZInt, _key_expr: &WireExpr) {}
     fn forget_resource(&self, _expr_id: ZInt) {}
-    fn decl_publisher(&self, _key_expr: &KeyExpr, _routing_context: Option<RoutingContext>) {}
-    fn forget_publisher(&self, _key_expr: &KeyExpr, _routing_context: Option<RoutingContext>) {}
+    fn decl_publisher(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
+    fn forget_publisher(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
     fn decl_subscriber(
         &self,
-        _key_expr: &KeyExpr,
+        _key_expr: &WireExpr,
         _sub_info: &SubInfo,
         _routing_context: Option<RoutingContext>,
     ) {
     }
-    fn forget_subscriber(&self, _key_expr: &KeyExpr, _routing_context: Option<RoutingContext>) {}
+    fn forget_subscriber(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
     fn decl_queryable(
         &self,
-        _key_expr: &KeyExpr,
-        _kind: ZInt,
+        _key_expr: &WireExpr,
         _qabl_info: &QueryableInfo,
         _routing_context: Option<RoutingContext>,
     ) {
     }
-    fn forget_queryable(
-        &self,
-        _key_expr: &KeyExpr,
-        _kind: ZInt,
-        _routing_context: Option<RoutingContext>,
-    ) {
-    }
+    fn forget_queryable(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
 
     fn send_data(
         &self,
-        _key_expr: &KeyExpr,
+        _key_expr: &WireExpr,
         payload: ZBuf,
         channel: Channel,
         congestion_control: CongestionControl,
@@ -85,7 +75,7 @@ impl Primitives for LatencyPrimitives {
             .as_ref()
             .unwrap()
             .decl_resource(1, &"/test/pong".into());
-        let rid = KeyExpr::from(1);
+        let rid = WireExpr::from(1);
         tx_primitive.as_ref().unwrap().send_data(
             &rid,
             payload,
@@ -98,20 +88,20 @@ impl Primitives for LatencyPrimitives {
 
     fn send_query(
         &self,
-        _key_expr: &KeyExpr,
-        _value_selector: &str,
+        _key_expr: &WireExpr,
+        _parameters: &str,
         _qid: ZInt,
         _target: QueryTarget,
-        _consolidation: ConsolidationStrategy,
+        _consolidation: ConsolidationMode,
+        _body: Option<QueryBody>,
         _routing_context: Option<RoutingContext>,
     ) {
     }
     fn send_reply_data(
         &self,
         _qid: ZInt,
-        _source_kind: ZInt,
-        _replier_id: PeerId,
-        _key_expr: KeyExpr,
+        _replier_id: ZenohId,
+        _key_expr: WireExpr,
         _info: Option<DataInfo>,
         _payload: ZBuf,
     ) {
@@ -120,7 +110,7 @@ impl Primitives for LatencyPrimitives {
     fn send_pull(
         &self,
         _is_final: bool,
-        _key_expr: &KeyExpr,
+        _key_expr: &WireExpr,
         _pull_id: ZInt,
         _max_samples: &Option<ZInt>,
     ) {
@@ -182,11 +172,10 @@ async fn main() {
     rx_primitives.set_tx(tx_primitives.clone());
 
     tx_primitives.decl_resource(2, &"/test/ping".into());
-    let rid = KeyExpr::from(2);
+    let rid = WireExpr::from(2);
     let sub_info = SubInfo {
         reliability: Reliability::Reliable,
         mode: SubMode::Push,
-        period: None,
     };
     tx_primitives.decl_subscriber(&rid, &sub_info, None);
 

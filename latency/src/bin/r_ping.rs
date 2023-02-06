@@ -18,17 +18,17 @@ use std::io::Write;
 use std::sync::{Arc, Barrier, Mutex};
 use std::time::Duration;
 use std::time::Instant;
+use zenoh::buffers::reader::{HasReader, Reader};
+use zenoh::buffers::{WBuf, ZBuf};
 use zenoh::config::Config;
-use zenoh::net::protocol::io::reader::{HasReader, Reader};
-use zenoh::net::protocol::io::SplitBuffer;
-use zenoh::net::protocol::io::{WBuf, ZBuf};
-use zenoh::net::protocol::proto::{DataInfo, RoutingContext};
-use zenoh::net::runtime::Runtime;
-use zenoh::net::transport::Primitives;
+use zenoh::prelude::SplitBuffer;
+use zenoh::runtime::Runtime;
+use zenoh_protocol::proto::{DataInfo, QueryBody, RoutingContext};
 use zenoh_protocol_core::{
-    Channel, CongestionControl, ConsolidationStrategy, KeyExpr, PeerId, Priority, QueryTarget,
-    QueryableInfo, Reliability, SubInfo, SubMode, WhatAmI, ZInt,
+    Channel, CongestionControl, ConsolidationMode, Priority, QueryTarget, QueryableInfo,
+    Reliability, SubInfo, SubMode, WhatAmI, WireExpr, ZInt, ZenohId,
 };
+use zenoh_transport::Primitives;
 
 const KEY_EXPR_PING: &str = "/test/ping";
 const KEY_EXPR_PONG: &str = "/test/pong";
@@ -58,37 +58,30 @@ impl LatencyPrimitivesParallel {
 }
 
 impl Primitives for LatencyPrimitivesParallel {
-    fn decl_resource(&self, _expr_id: ZInt, _key_expr: &KeyExpr) {}
+    fn decl_resource(&self, _expr_id: ZInt, _key_expr: &WireExpr) {}
     fn forget_resource(&self, _expr_id: ZInt) {}
-    fn decl_publisher(&self, _key_expr: &KeyExpr, _routing_context: Option<RoutingContext>) {}
-    fn forget_publisher(&self, _key_expr: &KeyExpr, _routing_context: Option<RoutingContext>) {}
+    fn decl_publisher(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
+    fn forget_publisher(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
     fn decl_subscriber(
         &self,
-        _key_expr: &KeyExpr,
+        _key_expr: &WireExpr,
         _sub_info: &SubInfo,
         _routing_context: Option<RoutingContext>,
     ) {
     }
-    fn forget_subscriber(&self, _key_expr: &KeyExpr, _routing_context: Option<RoutingContext>) {}
+    fn forget_subscriber(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
     fn decl_queryable(
         &self,
-        _key_expr: &KeyExpr,
-        _kind: ZInt,
+        _key_expr: &WireExpr,
         _qabl_info: &QueryableInfo,
         _routing_context: Option<RoutingContext>,
     ) {
     }
-    fn forget_queryable(
-        &self,
-        _key_expr: &KeyExpr,
-        _kind: ZInt,
-        _routing_context: Option<RoutingContext>,
-    ) {
-    }
+    fn forget_queryable(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
 
     fn send_data(
         &self,
-        _key_expr: &KeyExpr,
+        _key_expr: &WireExpr,
         payload: ZBuf,
         _channel: Channel,
         _congestion_control: CongestionControl,
@@ -116,20 +109,20 @@ impl Primitives for LatencyPrimitivesParallel {
 
     fn send_query(
         &self,
-        _key_expr: &KeyExpr,
-        _value_selector: &str,
+        _key_expr: &WireExpr,
+        _parameters: &str,
         _qid: ZInt,
         _target: QueryTarget,
-        _consolidation: ConsolidationStrategy,
+        _consolidation: ConsolidationMode,
+        _body: Option<QueryBody>,
         _routing_context: Option<RoutingContext>,
     ) {
     }
     fn send_reply_data(
         &self,
         _qid: ZInt,
-        _replier_kind: ZInt,
-        _replier_id: PeerId,
-        _key_expr: KeyExpr,
+        _replier_id: ZenohId,
+        _key_expr: WireExpr,
         _info: Option<DataInfo>,
         _payload: ZBuf,
     ) {
@@ -138,7 +131,7 @@ impl Primitives for LatencyPrimitivesParallel {
     fn send_pull(
         &self,
         _is_final: bool,
-        _key_expr: &KeyExpr,
+        _key_expr: &WireExpr,
         _pull_id: ZInt,
         _max_samples: &Option<ZInt>,
     ) {
@@ -158,37 +151,30 @@ impl LatencyPrimitivesSequential {
 }
 
 impl Primitives for LatencyPrimitivesSequential {
-    fn decl_resource(&self, _expr_id: ZInt, _key_expr: &KeyExpr) {}
+    fn decl_resource(&self, _expr_id: ZInt, _key_expr: &WireExpr) {}
     fn forget_resource(&self, _expr_id: ZInt) {}
-    fn decl_publisher(&self, _key_expr: &KeyExpr, _routing_context: Option<RoutingContext>) {}
-    fn forget_publisher(&self, _key_expr: &KeyExpr, _routing_context: Option<RoutingContext>) {}
+    fn decl_publisher(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
+    fn forget_publisher(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
     fn decl_subscriber(
         &self,
-        _key_expr: &KeyExpr,
+        _key_expr: &WireExpr,
         _sub_info: &SubInfo,
         _routing_context: Option<RoutingContext>,
     ) {
     }
-    fn forget_subscriber(&self, _key_expr: &KeyExpr, _routing_context: Option<RoutingContext>) {}
+    fn forget_subscriber(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
     fn decl_queryable(
         &self,
-        _key_expr: &KeyExpr,
-        _kind: ZInt,
+        _key_expr: &WireExpr,
         _qabl_info: &QueryableInfo,
         _routing_context: Option<RoutingContext>,
     ) {
     }
-    fn forget_queryable(
-        &self,
-        _key_expr: &KeyExpr,
-        _kind: ZInt,
-        _routing_context: Option<RoutingContext>,
-    ) {
-    }
+    fn forget_queryable(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {}
 
     fn send_data(
         &self,
-        _key_expr: &KeyExpr,
+        _key_expr: &WireExpr,
         payload: ZBuf,
         _channel: Channel,
         _congestion_control: CongestionControl,
@@ -208,20 +194,20 @@ impl Primitives for LatencyPrimitivesSequential {
 
     fn send_query(
         &self,
-        _key_expr: &KeyExpr,
-        _value_selector: &str,
+        _key_expr: &WireExpr,
+        _parameters: &str,
         _qid: ZInt,
         _target: QueryTarget,
-        _consolidation: ConsolidationStrategy,
+        _consolidation: ConsolidationMode,
+        _body: Option<QueryBody>,
         _routing_context: Option<RoutingContext>,
     ) {
     }
     fn send_reply_data(
         &self,
         _qid: ZInt,
-        _replier_kind: ZInt,
-        _replier_id: PeerId,
-        _key_expr: KeyExpr,
+        _replier_id: ZenohId,
+        _key_expr: WireExpr,
         _info: Option<DataInfo>,
         _payload: ZBuf,
     ) {
@@ -230,7 +216,7 @@ impl Primitives for LatencyPrimitivesSequential {
     fn send_pull(
         &self,
         _is_final: bool,
-        _key_expr: &KeyExpr,
+        _key_expr: &WireExpr,
         _pull_id: ZInt,
         _max_samples: &Option<ZInt>,
     ) {
@@ -282,11 +268,10 @@ async fn parallel(opt: Opt, config: Config) {
     let tx_primitives = runtime.router.new_primitives(rx_primitives);
 
     tx_primitives.decl_resource(1, &KEY_EXPR_PONG.into());
-    let rid = KeyExpr::from(1);
+    let rid = WireExpr::from(1);
     let sub_info = SubInfo {
         reliability: Reliability::Reliable,
         mode: SubMode::Push,
-        period: None,
     };
     tx_primitives.decl_subscriber(&rid, &sub_info, None);
 
@@ -299,7 +284,7 @@ async fn parallel(opt: Opt, config: Config) {
     let mut count: u64 = 0;
 
     tx_primitives.decl_resource(2, &KEY_EXPR_PING.into());
-    let rid = KeyExpr::from(2);
+    let rid = WireExpr::from(2);
 
     loop {
         // Create and send the message
@@ -327,11 +312,10 @@ async fn single(opt: Opt, config: Config) {
     let tx_primitives = runtime.router.new_primitives(rx_primitives);
 
     tx_primitives.decl_resource(1, &KEY_EXPR_PONG.into());
-    let rid = KeyExpr::from(1);
+    let rid = WireExpr::from(1);
     let sub_info = SubInfo {
         reliability: Reliability::Reliable,
         mode: SubMode::Push,
-        period: None,
     };
     tx_primitives.decl_subscriber(&rid, &sub_info, None);
 
@@ -343,7 +327,7 @@ async fn single(opt: Opt, config: Config) {
     let payload = vec![0u8; opt.payload - 8];
     let mut count: u64 = 0;
     tx_primitives.decl_resource(2, &KEY_EXPR_PING.into());
-    let rid = KeyExpr::from(2);
+    let rid = WireExpr::from(2);
     loop {
         // Create and send the message
         let mut data: WBuf = WBuf::new(opt.payload, true);

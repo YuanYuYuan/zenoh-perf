@@ -19,14 +19,17 @@ use std::io::Write;
 use std::str::FromStr;
 use std::sync::{Arc, Barrier, Mutex};
 use std::time::{Duration, Instant};
-use zenoh::net::link::Link;
-use zenoh::net::protocol::io::reader::{HasReader, Reader};
-use zenoh::net::protocol::io::SplitBuffer;
-use zenoh::net::protocol::io::{WBuf, ZBuf};
-use zenoh::net::protocol::proto::{Data, ZenohBody, ZenohMessage};
-use zenoh::net::transport::*;
+use zenoh::buffers::reader::{HasReader, Reader};
+use zenoh::buffers::{WBuf, ZBuf};
+use zenoh::prelude::SplitBuffer;
 use zenoh_core::Result as ZResult;
+use zenoh_link::Link;
+use zenoh_protocol::proto::{Data, ZenohBody, ZenohMessage};
 use zenoh_protocol_core::{Channel, CongestionControl, EndPoint, Priority, Reliability, WhatAmI};
+use zenoh_transport::{
+    TransportEventHandler, TransportManager, TransportMulticast, TransportMulticastEventHandler,
+    TransportPeer, TransportPeerEventHandler, TransportUnicast,
+};
 
 // Transport Handler for the non-blocking endpoint
 struct MySHParallel {

@@ -16,13 +16,13 @@ use async_std::task;
 use clap::Parser;
 use std::str::FromStr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use zenoh::net::protocol::proto::ZenohMessage;
-use zenoh::net::transport::{
+use zenoh_core::Result as ZResult;
+use zenoh_protocol::proto::ZenohMessage;
+use zenoh_protocol_core::{Channel, CongestionControl, EndPoint, Priority, Reliability, WhatAmI};
+use zenoh_transport::{
     DummyTransportPeerEventHandler, TransportEventHandler, TransportManager, TransportMulticast,
     TransportMulticastEventHandler, TransportPeer, TransportPeerEventHandler, TransportUnicast,
 };
-use zenoh_core::Result as ZResult;
-use zenoh_protocol_core::{Channel, CongestionControl, EndPoint, Priority, Reliability, WhatAmI};
 
 struct MySH {}
 

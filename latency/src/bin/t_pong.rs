@@ -16,14 +16,14 @@ use async_std::sync::Arc;
 use clap::Parser;
 use std::any::Any;
 use std::str::FromStr;
-use zenoh::net::link::Link;
-use zenoh::net::protocol::proto::ZenohMessage;
-use zenoh::net::transport::{
+use zenoh_core::Result as ZResult;
+use zenoh_link::Link;
+use zenoh_protocol::proto::ZenohMessage;
+use zenoh_protocol_core::{EndPoint, WhatAmI};
+use zenoh_transport::{
     TransportEventHandler, TransportManager, TransportMulticast, TransportMulticastEventHandler,
     TransportPeer, TransportPeerEventHandler, TransportUnicast,
 };
-use zenoh_core::Result as ZResult;
-use zenoh_protocol_core::{EndPoint, WhatAmI};
 
 // Transport Handler for the peer
 struct MySH;

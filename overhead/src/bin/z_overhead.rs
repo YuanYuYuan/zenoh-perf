@@ -51,7 +51,7 @@ async fn main() {
     let opt = Opt::from_args();
 
     let mut config = Config::default();
-    config.set_mode(Some(opt.mode.clone())).unwrap();
+    config.set_mode(Some(opt.mode)).unwrap();
     config
         .set_timestamping(
             TimestampingConf::new(

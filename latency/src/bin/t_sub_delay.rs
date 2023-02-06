@@ -24,8 +24,8 @@ use zenoh_link::Link;
 use zenoh_protocol::proto::{Data, ZenohBody, ZenohMessage};
 use zenoh_protocol_core::{EndPoint, WhatAmI};
 use zenoh_transport::{
-    TransportEventHandler, TransportMulticast, TransportMulticastEventHandler, TransportPeer,
-    TransportPeerEventHandler, TransportUnicast, TransportManager,
+    TransportEventHandler, TransportManager, TransportMulticast, TransportMulticastEventHandler,
+    TransportPeer, TransportPeerEventHandler, TransportUnicast,
 };
 
 // Transport Handler for the peer

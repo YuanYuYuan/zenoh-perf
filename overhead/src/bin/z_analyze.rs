@@ -70,7 +70,7 @@ fn read_transport_messages(mut data: &[u8]) -> Vec<TransportMessage> {
         let to_read = u16::from_le_bytes(length_bytes) as usize;
         // Read the message
         let mut buffer = vec![0u8; to_read];
-        let _ = data.read_exact(&mut buffer).unwrap();
+        data.read_exact(&mut buffer).unwrap();
 
         let zbuf = ZBuf::from(buffer);
         let mut zbuf = zbuf.reader();

@@ -30,7 +30,7 @@ use zenoh::net::protocol::{
 };
 use zenoh::{
     config::WhatAmI,
-    prelude::{MessageReader, MessageWriter, PeerId},
+    prelude::{MessageReader, MessageWriter, ZenohId},
 };
 use zenoh_buffers::traits::reader::HasReader;
 
@@ -71,7 +71,7 @@ macro_rules! zrecv {
 
 async fn handle_client(mut stream: TcpStream) -> Result<(), Box<dyn std::error::Error>> {
     let my_whatami = WhatAmI::Router;
-    let my_pid = PeerId::rand();
+    let my_pid = ZenohId::rand();
 
     // Create the reading buffer
     let mut buffer = vec![0u8; 16_000_000];

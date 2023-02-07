@@ -18,11 +18,11 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
     time::{Duration, Instant},
 };
-use zenoh::config::Config;
-use zenoh_protocol::proto::RoutingContext;
+use zenoh::{buffers::ZBuf, config::Config, runtime::Runtime};
+use zenoh_protocol::proto::{DataInfo, QueryBody, RoutingContext};
 use zenoh_protocol_core::{
-    Channel, CongestionControl, ConsolidationStrategy, EndPoint, PeerId, QueryTarget,
-    QueryableInfo, Reliability, SubInfo, SubMode, WhatAmI, WireExpr, ZInt,
+    Channel, CongestionControl, ConsolidationMode, EndPoint, QueryTarget, QueryableInfo,
+    Reliability, SubInfo, SubMode, WhatAmI, WireExpr, ZInt, ZenohId,
 };
 use zenoh_transport::Primitives;
 
@@ -37,7 +37,7 @@ impl ThroughputPrimitives {
 }
 
 impl Primitives for ThroughputPrimitives {
-    fn decl_resource(&self, _expr_id: ZInt, _key_expr: &KeyExpr) {
+    fn decl_resource(&self, _expr_id: ZInt, _key_expr: &WireExpr) {
         self.count.fetch_add(1, Ordering::Relaxed);
     }
 
@@ -45,49 +45,43 @@ impl Primitives for ThroughputPrimitives {
         self.count.fetch_add(1, Ordering::Relaxed);
     }
 
-    fn decl_publisher(&self, _key_expr: &KeyExpr, _routing_context: Option<RoutingContext>) {
+    fn decl_publisher(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {
         self.count.fetch_add(1, Ordering::Relaxed);
     }
 
-    fn forget_publisher(&self, _key_expr: &KeyExpr, _routing_context: Option<RoutingContext>) {
+    fn forget_publisher(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {
         self.count.fetch_add(1, Ordering::Relaxed);
     }
 
     fn decl_subscriber(
         &self,
-        _key_expr: &KeyExpr,
+        _key_expr: &WireExpr,
         _sub_info: &SubInfo,
         _routing_context: Option<RoutingContext>,
     ) {
         self.count.fetch_add(1, Ordering::Relaxed);
     }
 
-    fn forget_subscriber(&self, _key_expr: &KeyExpr, _routing_context: Option<RoutingContext>) {
+    fn forget_subscriber(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {
         self.count.fetch_add(1, Ordering::Relaxed);
     }
 
     fn decl_queryable(
         &self,
-        _key_expr: &KeyExpr,
-        _kind: ZInt,
+        _key_expr: &WireExpr,
         _qable_info: &QueryableInfo,
         _routing_context: Option<RoutingContext>,
     ) {
         self.count.fetch_add(1, Ordering::Relaxed);
     }
 
-    fn forget_queryable(
-        &self,
-        _key_expr: &KeyExpr,
-        _kind: ZInt,
-        _routing_context: Option<RoutingContext>,
-    ) {
+    fn forget_queryable(&self, _key_expr: &WireExpr, _routing_context: Option<RoutingContext>) {
         self.count.fetch_add(1, Ordering::Relaxed);
     }
 
     fn send_data(
         &self,
-        _key_expr: &KeyExpr,
+        _key_expr: &WireExpr,
         _payload: ZBuf,
         _channel: Channel,
         _congestion_control: CongestionControl,
@@ -99,11 +93,12 @@ impl Primitives for ThroughputPrimitives {
 
     fn send_query(
         &self,
-        _key_expr: &KeyExpr,
-        _value_selector: &str,
+        _key_expr: &WireExpr,
+        _parameters: &str,
         _qid: ZInt,
         _target: QueryTarget,
-        _consolidation: ConsolidationStrategy,
+        _consolidation: ConsolidationMode,
+        _body: Option<QueryBody>,
         _routing_context: Option<RoutingContext>,
     ) {
         self.count.fetch_add(1, Ordering::Relaxed);
@@ -112,9 +107,8 @@ impl Primitives for ThroughputPrimitives {
     fn send_reply_data(
         &self,
         _qid: ZInt,
-        _replier_kind: ZInt,
-        _replier_id: PeerId,
-        _key_expr: KeyExpr,
+        _replier_id: ZenohId,
+        _key_expr: WireExpr,
         _info: Option<DataInfo>,
         _payload: ZBuf,
     ) {
@@ -128,7 +122,7 @@ impl Primitives for ThroughputPrimitives {
     fn send_pull(
         &self,
         _is_final: bool,
-        _key_expr: &KeyExpr,
+        _key_expr: &WireExpr,
         _pull_id: ZInt,
         _max_samples: &Option<ZInt>,
     ) {
@@ -208,7 +202,6 @@ async fn main() {
     let sub_info = SubInfo {
         reliability: Reliability::Reliable,
         mode: SubMode::Push,
-        period: None,
     };
     primitives.decl_subscriber(&rid, &sub_info, None);
 

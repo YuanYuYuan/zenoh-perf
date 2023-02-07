@@ -19,16 +19,15 @@ use std::{
     time::Duration,
 };
 use zenoh::{
-    config::Config,
-    net::{
-        protocol::io::ZBuf,
-        runtime::Runtime,
-        transport::{DummyPrimitives, Primitives},
-    },
+    buffers::ZBuf,
+    config::{Config, TimestampingConf},
+    runtime::Runtime,
 };
 use zenoh_protocol_core::{
-    Channel, CongestionControl, EndPoint, KeyExpr, Priority, Reliability, WhatAmI,
+    Channel, CongestionControl, EndPoint, Priority, Reliability, WhatAmI, WireExpr,
 };
+use zenoh_transport::DummyPrimitives;
+use zenoh_transport::Primitives;
 
 #[derive(Debug, Parser)]
 #[clap(name = "r_pub_thr")]
@@ -50,7 +49,7 @@ struct Opt {
     print: bool,
 
     /// configuration file (json5 or yaml)
-    #[clap(long = "conf", parse(from_os_str))]
+    #[clap(long = "conf", value_parser)]
     config: Option<PathBuf>,
 }
 
@@ -75,7 +74,15 @@ async fn main() {
             Config::default()
         };
         config.set_mode(Some(mode)).unwrap();
-        config.set_add_timestamp(Some(false)).unwrap();
+        config
+            .set_timestamping(
+                TimestampingConf::new(
+                    Some(zenoh::config::ModeDependentValue::Unique(false)),
+                    Some(false),
+                )
+                .unwrap(),
+            )
+            .unwrap();
         config.scouting.multicast.set_enabled(Some(false)).unwrap();
         config.connect.endpoints.extend(endpoint);
         config
@@ -87,7 +94,7 @@ async fn main() {
     let primitives = runtime.router.new_primitives(my_primitives);
 
     primitives.decl_resource(1, &"/test/thr".to_string().into());
-    let rid = KeyExpr::from(1);
+    let rid = WireExpr::from(1);
     primitives.decl_publisher(&rid, None);
 
     // @TODO: Fix writer starvation in the RwLock and remove this sleep
@@ -108,7 +115,7 @@ async fn main() {
                 task::sleep(Duration::from_secs(1)).await;
                 let c = count.swap(0, Ordering::Relaxed);
                 if c > 0 {
-                    println!("{} msg/s", c);
+                    println!("{c} msg/s");
                 }
             }
         });

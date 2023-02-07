@@ -18,21 +18,13 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
     time::{Duration, Instant},
 };
-use zenoh::{
-    config::Config,
-    net::{
-        protocol::{
-            io::ZBuf,
-            proto::{DataInfo, RoutingContext},
-        },
-        runtime::Runtime,
-        transport::Primitives,
-    },
-};
+use zenoh::config::Config;
+use zenoh_protocol::proto::RoutingContext;
 use zenoh_protocol_core::{
-    Channel, CongestionControl, ConsolidationStrategy, EndPoint, KeyExpr, PeerId, QueryTarget,
-    QueryableInfo, Reliability, SubInfo, SubMode, WhatAmI, ZInt,
+    Channel, CongestionControl, ConsolidationStrategy, EndPoint, PeerId, QueryTarget,
+    QueryableInfo, Reliability, SubInfo, SubMode, WhatAmI, WireExpr, ZInt,
 };
+use zenoh_transport::Primitives;
 
 struct ThroughputPrimitives {
     count: Arc<AtomicUsize>,
@@ -170,7 +162,7 @@ struct Opt {
     scenario: String,
 
     /// configuration file (json5 or yaml)
-    #[clap(long = "conf", parse(from_os_str))]
+    #[clap(long = "conf", value_parser)]
     config: Option<PathBuf>,
 }
 
@@ -212,7 +204,7 @@ async fn main() {
 
     primitives.decl_resource(1, &"/test/thr".to_string().into());
 
-    let rid = KeyExpr::from(1);
+    let rid = WireExpr::from(1);
     let sub_info = SubInfo {
         reliability: Reliability::Reliable,
         mode: SubMode::Push,

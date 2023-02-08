@@ -7,10 +7,11 @@
 <Domain Id="any">
     <General>
         <Interfaces>
+            <!-- multicast=ture: ignore what the OS reports while using loopback -->
             <NetworkInterface
                 name="${IFACE}"
                 address="${HOST_IP}"
-                multicast="true"     <!-- ignore what the OS reports while using loopback -->
+                multicast="true"
                 autodetermine="false"
             />
         </Interfaces>

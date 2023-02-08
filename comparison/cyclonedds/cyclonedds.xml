@@ -11,6 +11,7 @@
                 name="${IFACE}"
                 address="${HOST_IP}"
                 multicast="true"     <!-- ignore what the OS reports while using loopback -->
+                autodetermine="false"
             />
         </Interfaces>
     </General>

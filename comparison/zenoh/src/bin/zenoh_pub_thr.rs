@@ -89,7 +89,7 @@ fn main() {
                     config.connect.endpoints.extend(endpoint);
                 }
             }
-            _ => panic!("Unsupported mode: {}", mode),
+            _ => panic!("Unsupported mode: {mode}"),
         };
         config
     };
@@ -113,7 +113,7 @@ fn main() {
             thread::sleep(Duration::from_secs(1));
             let c = count.swap(0, Ordering::Relaxed);
             if c > 0 {
-                println!("{} msg/s", c);
+                println!("{c} msg/s");
             }
         });
         loop {

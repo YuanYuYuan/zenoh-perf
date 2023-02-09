@@ -82,7 +82,7 @@ async fn main() {
                     config.connect.endpoints.extend(endpoint);
                 }
             }
-            _ => panic!("Unsupported mode: {}", mode),
+            _ => panic!("Unsupported mode: {mode}"),
         };
         config
     };

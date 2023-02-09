@@ -30,7 +30,7 @@ struct Opt {
     endpoint: Vec<EndPoint>,
 
     /// peer, router, or client
-    #[clap(short, long, possible_values = ["peer", "client"])]
+    #[clap(short, long, value_parser = ["peer", "client"])]
     mode: WhatAmI,
 
     /// payload size (bytes)
@@ -44,7 +44,7 @@ struct Opt {
     scenario: String,
 
     /// configuration file (json5 or yaml)
-    #[clap(long = "conf", parse(from_os_str))]
+    #[clap(long = "conf", value_parser)]
     config: Option<PathBuf>,
 
     /// declare a numerical Id for the subscribed key expression

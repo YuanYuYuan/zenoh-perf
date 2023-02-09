@@ -20,20 +20,17 @@ use std::{
     time::Duration,
 };
 use zenoh::{
+    buffers::ZBuf,
     config::{Config, WhatAmI},
-    net::{
-        link::{EndPoint, Link},
-        protocol::core::{Channel, CongestionControl, Priority, Reliability},
-        protocol::{io::ZBuf, proto::ZenohMessage},
-        transport::{
-            TransportEventHandler, TransportManager, TransportMulticast,
-            TransportMulticastEventHandler, TransportPeer, TransportPeerEventHandler,
-            TransportUnicast,
-        },
-    },
-    prelude::KeyExpr,
 };
 use zenoh_core::zresult::ZResult;
+use zenoh_link::{EndPoint, Link};
+use zenoh_protocol::proto::ZenohMessage;
+use zenoh_protocol_core::{Channel, CongestionControl, Priority, Reliability, WireExpr};
+use zenoh_transport::{
+    TransportEventHandler, TransportManager, TransportMulticast, TransportMulticastEventHandler,
+    TransportPeer, TransportPeerEventHandler, TransportUnicast,
+};
 
 // Transport Handler for the peer
 struct MySH {
@@ -71,7 +68,7 @@ impl TransportEventHandler for MySH {
                 loop {
                     task::sleep(Duration::from_secs(1)).await;
                     let c = count.swap(0, Ordering::Relaxed);
-                    println!("session,{},throughput,{},{},{}", scenario, name, payload, c);
+                    println!("session,{scenario},throughput,{name},{payload},{c}");
                 }
             });
         }
@@ -142,7 +139,7 @@ struct Opt {
     print: bool,
 
     /// configuration file (json5 or yaml)
-    #[clap(long = "conf", parse(from_os_str))]
+    #[clap(long = "conf", value_parser)]
     config: Option<PathBuf>,
 }
 
@@ -200,7 +197,7 @@ async fn main() {
         reliability: Reliability::Reliable,
     };
     let congestion_control = CongestionControl::Block;
-    let key = KeyExpr::from("test");
+    let key = WireExpr::from("test");
     let info = None;
     let payload = ZBuf::from(vec![0u8; payload]);
     let reply_context = None;
@@ -215,7 +212,7 @@ async fn main() {
                 task::sleep(Duration::from_secs(1)).await;
                 let c = c_count.swap(0, Ordering::Relaxed);
                 if c > 0 {
-                    println!("{} msg/s", c);
+                    println!("{c} msg/s");
                 }
             }
         });

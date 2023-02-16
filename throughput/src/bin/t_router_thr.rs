@@ -19,15 +19,14 @@ use std::{
     path::PathBuf,
     sync::{Arc, RwLock},
 };
-use zenoh::{
-    config::{Config, WhatAmI},
-    net::{
-        link::{EndPoint, Link},
-        protocol::proto::ZenohMessage,
-        transport::*,
-    },
-};
+use zenoh::config::{Config, WhatAmI};
 use zenoh_core::zresult::ZResult;
+use zenoh_link::{EndPoint, Link};
+use zenoh_protocol::proto::ZenohMessage;
+use zenoh_transport::{
+    TransportEventHandler, TransportManager, TransportMulticast, TransportMulticastEventHandler,
+    TransportPeer, TransportPeerEventHandler, TransportUnicast,
+};
 
 type Table = Arc<RwLock<Slab<TransportUnicast>>>;
 
@@ -107,7 +106,7 @@ struct Opt {
     connect: Vec<EndPoint>,
 
     /// configuration file (json5 or yaml)
-    #[clap(long = "conf", parse(from_os_str))]
+    #[clap(long = "conf", value_parser)]
     config: Option<PathBuf>,
 }
 

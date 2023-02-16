@@ -18,21 +18,18 @@ use async_std::{
     task,
 };
 use clap::Parser;
+use zenoh_protocol::proto::{TransportBody, TransportMessage};
 use std::{
     convert::TryInto,
     io::Write,
     sync::atomic::{AtomicUsize, Ordering},
     time::Duration,
 };
-use zenoh::net::protocol::{
-    io::{WBuf, ZBuf, ZSlice},
-    proto::{InitSyn, OpenSyn, TransportBody, TransportMessage},
-};
 use zenoh::{
     config::WhatAmI,
+    buffers::{WBuf, ZBuf},
     prelude::{MessageReader, MessageWriter, ZenohId},
 };
-use zenoh_buffers::traits::reader::HasReader;
 
 macro_rules! zsend {
     ($msg:expr, $stream:expr) => {{

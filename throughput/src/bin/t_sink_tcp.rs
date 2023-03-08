@@ -14,6 +14,7 @@
 use async_std::{
     net::{SocketAddr, TcpListener, TcpStream},
     prelude::*,
+    io::Write,
     sync::Arc,
     task,
 };
@@ -21,24 +22,28 @@ use clap::Parser;
 use zenoh_protocol::proto::{TransportBody, TransportMessage};
 use std::{
     convert::TryInto,
-    io::Write,
     sync::atomic::{AtomicUsize, Ordering},
     time::Duration,
 };
+use zenoh_protocol::transport::{OpenSyn, InitSyn};
+use zenoh_codec::{Zenoh060, WCodec};
+use zenoh_core::zerror;
 use zenoh::{
     config::WhatAmI,
-    buffers::{WBuf, ZBuf},
+    buffers::{BBuf, ZBuf},
     prelude::{MessageReader, MessageWriter, ZenohId},
 };
 
 macro_rules! zsend {
     ($msg:expr, $stream:expr) => {{
         // Create the buffer for serializing the message
-        let mut wbuf = WBuf::new(32, false);
+        let mut wbuf = BBuf::new(32, false);
+        let mut writer = wbuf.writer();
+        let codec = Zenoh060::default();
         // Reserve 16 bits to write the length
         assert!(wbuf.write(&[0u8, 0u8]).unwrap() > 0);
         // Serialize the message
-        assert!(wbuf.write_transport_message(&mut $msg));
+        assert!(codec.write(&mut writer, &mut $msg).unwrap());
         // Write the length on the first 16 bits
         let length: u16 = wbuf.len() as u16 - 2;
         let bits = wbuf.get_first_slice_mut(..2);
@@ -62,7 +67,18 @@ macro_rules! zrecv {
         let to_read = u16::from_le_bytes(length) as usize;
         $stream.read_exact(&mut $buffer[0..to_read]).await.unwrap();
         let zbuf = ZBuf::from($buffer.clone());
-        zbuf.reader().read_transport_message().unwrap()
+        let mut reader = buffer.reader();
+        let codec = Zenoh060::default();
+
+        let mut messages: Vec<TransportMessage> = Vec::with_capacity(1);
+        while reader.can_read() {
+            let msg: TransportMessage = codec
+                .read(&mut reader)
+                .map_err(|_| zerror!("Read error on link: {}", self))?;
+            messages.push(msg);
+        }
+
+        messages
     }};
 }
 

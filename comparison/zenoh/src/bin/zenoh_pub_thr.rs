@@ -18,9 +18,9 @@ use std::{
     time::Duration,
 };
 use std::{sync::Arc, thread};
-use zenoh::prelude::sync::*;
+use zenoh::prelude::{sync::*, CongestionControl};
 use zenoh::{config::Config, prelude::Value};
-use zenoh_protocol_core::{CongestionControl, EndPoint, WhatAmI};
+use zenoh_config::{EndPoint, WhatAmI};
 
 #[derive(Debug, Parser)]
 #[clap(name = "zenoh_pub_thr")]

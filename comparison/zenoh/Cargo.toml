@@ -1,5 +1,5 @@
 [package]
-name = "zenoh-api-changes"
+name = "zenoh-comparison"
 version = "0.1.0"
 edition = "2021"
 
@@ -17,6 +17,7 @@ json5 = "0.4.1"
 zenoh                = { version = "0.7.0-rc", default-features = false, features = ["unstable", "transport_tcp", "transport_udp"] }
 zenoh-util           = "0.7.0-rc"
 zenoh-core           = "0.7.0-rc"
+zenoh-config         = "0.7.0-rc"
 zenoh-cfg-properties = "0.7.0-rc"
 zenoh-protocol-core  = "0.7.0-rc"
 zenoh-buffers        = "0.7.0-rc"

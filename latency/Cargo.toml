@@ -43,7 +43,6 @@ zenoh = { version = "0.7.0-rc", default-features = false, features = ["transport
 zenoh-util = "0.7.0-rc"
 zenoh-core = "0.7.0-rc"
 zenoh-cfg-properties = "0.7.0-rc"
-zenoh-protocol-core = "0.7.0-rc"
 zenoh-protocol = "0.7.0-rc"
 zenoh-transport = "0.7.0-rc"
 zenoh-link = "0.7.0-rc"

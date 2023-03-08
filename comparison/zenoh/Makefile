@@ -4,10 +4,8 @@ build: build_throughput build_latency
 
 build_throughput:
 	@cargo build --release \
-		--features="shared-memory" \
 		--bin zenoh_pub_thr \
-		--bin zenoh_sub_thr \
-		--bin zenoh_pub_shm
+		--bin zenoh_sub_thr
 
 build_latency:
 	@cargo build --release \

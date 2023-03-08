@@ -12,17 +12,20 @@
 //   ADLINK zenoh team, <zenoh@adlink-labs.tech>
 //
 use async_std::task;
-use zenoh::buffers::ZBuf;
-use zenoh::runtime::Runtime;
-use zenoh_link::EndPoint;
-use zenoh_protocol::proto::{RoutingContext, DataInfo, QueryBody};
-use zenoh_protocol_core::{ZInt, WireExpr, ConsolidationMode, QueryTarget, SubInfo, ZenohId, QueryableInfo, Channel, CongestionControl, WhatAmI};
-use zenoh_transport::Primitives;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Barrier, Mutex};
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
+use zenoh::buffers::ZBuf;
+use zenoh::runtime::Runtime;
+use zenoh_link::EndPoint;
+use zenoh_protocol::proto::{DataInfo, QueryBody, RoutingContext};
+use zenoh_protocol_core::{
+    Channel, CongestionControl, ConsolidationMode, QueryTarget, QueryableInfo, SubInfo, WhatAmI,
+    WireExpr, ZInt, ZenohId,
+};
+use zenoh_transport::Primitives;
 
 type Pending = Arc<Mutex<HashMap<u64, Arc<Barrier>>>>;
 

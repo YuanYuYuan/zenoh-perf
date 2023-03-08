@@ -19,7 +19,6 @@ use async_std::{
     task,
 };
 use clap::Parser;
-use zenoh_protocol::proto::{TransportBody, TransportMessage};
 use std::{
     convert::TryInto,
     sync::atomic::{AtomicUsize, Ordering},
@@ -29,10 +28,11 @@ use zenoh_protocol::transport::{OpenSyn, InitSyn};
 use zenoh_codec::{Zenoh060, WCodec};
 use zenoh_core::zerror;
 use zenoh::{
+    buffers::{WBuf, ZBuf},
     config::WhatAmI,
-    buffers::{BBuf, ZBuf},
     prelude::{MessageReader, MessageWriter, ZenohId},
 };
+use zenoh_protocol::proto::{TransportBody, TransportMessage};
 
 macro_rules! zsend {
     ($msg:expr, $stream:expr) => {{

@@ -28,10 +28,13 @@ codegen-units=1
 opt-level=3
 panic="abort"
 
-# [patch.crates-io]
-# zenoh                = { git = "https://github.com/eclipse-zenoh/zenoh.git" }
-# zenoh-util           = { git = "https://github.com/eclipse-zenoh/zenoh.git" }
-# zenoh-core           = { git = "https://github.com/eclipse-zenoh/zenoh.git" }
-# zenoh-cfg-properties = { git = "https://github.com/eclipse-zenoh/zenoh.git" }
-# zenoh-protocol-core  = { git = "https://github.com/eclipse-zenoh/zenoh.git" }
-# zenoh-buffers        = { git = "https://github.com/eclipse-zenoh/zenoh.git" }
+[patch.crates-io]
+zenoh                = { git = "https://github.com/eclipse-zenoh/zenoh.git" }
+zenoh-util           = { git = "https://github.com/eclipse-zenoh/zenoh.git" }
+zenoh-core           = { git = "https://github.com/eclipse-zenoh/zenoh.git" }
+zenoh-cfg-properties = { git = "https://github.com/eclipse-zenoh/zenoh.git" }
+zenoh-protocol       = { git = "https://github.com/eclipse-zenoh/zenoh.git" }
+zenoh-buffers        = { git = "https://github.com/eclipse-zenoh/zenoh.git" }
+zenoh-config         = { git = "https://github.com/eclipse-zenoh/zenoh.git" }
+zenoh-link           = { git = "https://github.com/eclipse-zenoh/zenoh.git" }
+zenoh-transport      = { git = "https://github.com/eclipse-zenoh/zenoh.git" }

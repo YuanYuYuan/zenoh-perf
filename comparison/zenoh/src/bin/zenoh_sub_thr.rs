@@ -20,7 +20,7 @@ use std::{
 };
 use zenoh::config::Config;
 use zenoh::prelude::r#async::*;
-use zenoh_protocol_core::{EndPoint, WhatAmI};
+use zenoh_config::{EndPoint, WhatAmI};
 
 #[derive(Debug, Parser)]
 #[clap(name = "zenoh_sub_thr")]

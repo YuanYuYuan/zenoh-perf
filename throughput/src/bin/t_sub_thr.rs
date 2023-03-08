@@ -13,9 +13,6 @@
 //
 use async_std::{future, sync::Arc, task};
 use clap::Parser;
-use zenoh_link::{Link, EndPoint};
-use zenoh_protocol::proto::ZenohMessage;
-use zenoh_transport::{TransportEventHandler, TransportPeer, TransportUnicast, TransportPeerEventHandler, TransportMulticast, TransportMulticastEventHandler, TransportManager};
 use std::{
     any::Any,
     path::PathBuf,
@@ -24,6 +21,12 @@ use std::{
 };
 use zenoh::config::{Config, WhatAmI};
 use zenoh_core::zresult::ZResult;
+use zenoh_link::{EndPoint, Link};
+use zenoh_protocol::proto::ZenohMessage;
+use zenoh_transport::{
+    TransportEventHandler, TransportManager, TransportMulticast, TransportMulticastEventHandler,
+    TransportPeer, TransportPeerEventHandler, TransportUnicast,
+};
 
 // Transport Handler for the peer
 struct MySH {
@@ -163,9 +166,7 @@ async fn main() {
             .from_config(&Config::from_file(path).unwrap())
             .await
             .unwrap(),
-        None => {
-            TransportManager::builder().whatami(WhatAmI::Router)
-        },
+        None => TransportManager::builder().whatami(WhatAmI::Router),
     };
     let handler = Arc::new(MySH::new(scenario, name, payload, count));
     let manager = builder.build(handler).unwrap();

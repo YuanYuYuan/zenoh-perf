@@ -18,7 +18,6 @@ use async_std::{
     task,
 };
 use clap::Parser;
-use zenoh_protocol::proto::{TransportBody, TransportMessage};
 use std::{
     convert::TryInto,
     io::Write,
@@ -26,10 +25,11 @@ use std::{
     time::Duration,
 };
 use zenoh::{
-    config::WhatAmI,
     buffers::{WBuf, ZBuf},
+    config::WhatAmI,
     prelude::{MessageReader, MessageWriter, ZenohId},
 };
+use zenoh_protocol::proto::{TransportBody, TransportMessage};
 
 macro_rules! zsend {
     ($msg:expr, $stream:expr) => {{

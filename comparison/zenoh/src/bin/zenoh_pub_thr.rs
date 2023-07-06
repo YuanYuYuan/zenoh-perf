@@ -20,7 +20,7 @@ use std::{
 use std::{sync::Arc, thread};
 use zenoh::prelude::{sync::*, CongestionControl};
 use zenoh::{config::Config, prelude::Value};
-use zenoh_config::{EndPoint, WhatAmI};
+use zenoh::prelude::{EndPoint, WhatAmI};
 
 #[derive(Debug, Parser)]
 #[clap(name = "zenoh_pub_thr")]

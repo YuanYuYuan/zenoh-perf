@@ -16,7 +16,7 @@ use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use zenoh::config::Config;
 use zenoh::prelude::{sync::*, CongestionControl};
-use zenoh_config::{EndPoint, WhatAmI};
+use zenoh::prelude::{EndPoint, WhatAmI};
 
 #[derive(Debug, Parser)]
 #[clap(name = "zenoh_ping")]

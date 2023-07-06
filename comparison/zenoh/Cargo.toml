@@ -18,7 +18,6 @@ zenoh                = { workspace = true }
 zenoh-util           = { workspace = true }
 zenoh-core           = { workspace = true }
 zenoh-config         = { workspace = true }
-zenoh-cfg-properties = { workspace = true }
 zenoh-protocol       = { workspace = true }
 zenoh-buffers        = { workspace = true }
 lazy_static          = { workspace = true }

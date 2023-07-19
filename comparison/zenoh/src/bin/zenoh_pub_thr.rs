@@ -75,6 +75,7 @@ fn main() {
             .set_enabled(Some(zenoh::config::ModeDependentValue::Unique(false)))
             .unwrap();
         config.scouting.multicast.set_enabled(Some(false)).unwrap();
+        config.scouting.gossip.set_enabled(Some(false)).unwrap();
         match mode {
             WhatAmI::Peer => {
                 if let Some(endpoint) = listen {

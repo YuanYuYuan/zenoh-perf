@@ -63,6 +63,7 @@ async fn main() -> Result<()> {
         };
         config.set_mode(Some(mode)).unwrap();
         config.scouting.multicast.set_enabled(Some(false)).unwrap();
+        config.scouting.gossip.set_enabled(Some(false)).unwrap();
         match mode {
             WhatAmI::Peer => {
                 if let Some(endpoint) = listen {

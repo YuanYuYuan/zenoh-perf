@@ -66,6 +66,7 @@ fn main() {
         _ => panic!("Unsupported mode: {}", opt.mode),
     };
     config.scouting.multicast.set_enabled(Some(false)).unwrap();
+    config.scouting.gossip.set_enabled(Some(false)).unwrap();
 
     let session = zenoh::open(config).res().unwrap().into_arc();
 

@@ -133,21 +133,24 @@ async fn main() {
     // }
 
     // This aligns the behavior
+    // transports[0].handle_message(message.clone()).unwrap();
+    // transports[0].handle_message(message.clone()).unwrap();
+    // transports[0].handle_message(message.clone()).unwrap();
     transports[0].handle_message(message).unwrap();
 
-    let count = Arc::new(AtomicUsize::new(0));
-    if print {
-        let c_count = count.clone();
-        task::spawn(async move {
-            loop {
-                task::sleep(Duration::from_secs(1)).await;
-                let c = c_count.swap(0, Ordering::Relaxed);
-                if c > 0 {
-                    println!("{} msg/s", c);
-                }
-            }
-        });
-    }
+    // let count = Arc::new(AtomicUsize::new(0));
+    // if print {
+    //     let c_count = count.clone();
+    //     task::spawn(async move {
+    //         loop {
+    //             task::sleep(Duration::from_secs(1)).await;
+    //             let c = c_count.swap(0, Ordering::Relaxed);
+    //             if c > 0 {
+    //                 println!("{} msg/s", c);
+    //             }
+    //         }
+    //     });
+    // }
 
     // Send reliable messages
     let message: NetworkMessage = Push {
@@ -166,10 +169,10 @@ async fn main() {
     }
     .into();
 
-    loop {
+    for _ in 0..20_000_000 {
         for t in transports.iter() {
             t.handle_message(message.clone()).unwrap();
         }
-        count.fetch_add(1, Ordering::Relaxed);
+        // count.fetch_add(1, Ordering::Relaxed);
     }
 }

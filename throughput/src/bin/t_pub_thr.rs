@@ -126,9 +126,14 @@ async fn main() {
         }),
     }
     .into();
-    for t in transports.iter() {
-        t.handle_message(message.clone()).unwrap();
-    }
+
+    // // This makes difference
+    // for t in transports.iter() {
+    //     t.handle_message(message.clone()).unwrap();
+    // }
+
+    // This aligns the behavior
+    transports[0].handle_message(message).unwrap();
 
     let count = Arc::new(AtomicUsize::new(0));
     if print {

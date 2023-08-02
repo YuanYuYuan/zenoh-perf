@@ -18,11 +18,11 @@ members = [
 ]
 
 [profile.release]
-debug=false
-lto="fat"
-codegen-units=1
-opt-level=3
-panic="abort"
+debug=true
+# lto="fat"
+# codegen-units=1
+# opt-level=3
+# panic="abort"
 
 [workspace.dependencies]
 async-std = { version = "1.12.0", features = ["unstable"] }
@@ -40,12 +40,12 @@ structopt = "0.3.26"
 hex = "0.4.3"
 serde = "1.0.155"
 serde_json = "1.0.94"
-zenoh                = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "new-protocol", default-features = false, features = ["unstable", "transport_tcp", "transport_udp"] }
-zenoh-buffers        = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "new-protocol" }
-zenoh-codec          = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "new-protocol" }   
-zenoh-config         = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "new-protocol" }
-zenoh-core           = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "new-protocol" }
-zenoh-link           = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "new-protocol" }
-zenoh-protocol       = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "new-protocol" }
-zenoh-transport      = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "new-protocol" }
-zenoh-util           = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "new-protocol" }
+zenoh                = { path = "/home/circle/Workings/ZettaScale/src/zenoh-new-protocol/zenoh", default-features = false, features = ["unstable", "transport_tcp", "transport_udp"] }
+zenoh-buffers        = { path = "/home/circle/Workings/ZettaScale/src/zenoh-new-protocol/commons/zenoh-buffers" }
+zenoh-codec          = { path = "/home/circle/Workings/ZettaScale/src/zenoh-new-protocol/commons/zenoh-codec" }
+zenoh-config         = { path = "/home/circle/Workings/ZettaScale/src/zenoh-new-protocol/commons/zenoh-config" }
+zenoh-core           = { path = "/home/circle/Workings/ZettaScale/src/zenoh-new-protocol/commons/zenoh-core" }
+zenoh-link           = { path = "/home/circle/Workings/ZettaScale/src/zenoh-new-protocol/io/zenoh-link" }
+zenoh-protocol       = { path = "/home/circle/Workings/ZettaScale/src/zenoh-new-protocol/commons/zenoh-protocol" }
+zenoh-transport      = { path = "/home/circle/Workings/ZettaScale/src/zenoh-new-protocol/io/zenoh-transport" }
+zenoh-util           = { path = "/home/circle/Workings/ZettaScale/src/zenoh-new-protocol/commons/zenoh-util" }

@@ -80,6 +80,25 @@ impl TransportEventHandler for MySH {
             let scenario = self.scenario.clone();
             let name = self.name.clone();
             let payload = self.payload;
+            // task::spawn(async move {
+            //     loop {
+            //         let now = Instant::now();
+            //         task::sleep(Duration::from_secs(1)).await;
+            //         let elapsed = now.elapsed().as_micros() as f64;
+            //
+            //         let c = count.swap(0, Ordering::Relaxed);
+            //         if c > 0 {
+            //             let interval = 1_000_000.0 / elapsed;
+            //             println!(
+            //                 "session,{},throughput,{},{},{}",
+            //                 scenario,
+            //                 name,
+            //                 payload,
+            //                 (c as f64 / interval).floor() as usize
+            //             );
+            //         }
+            //     }
+            // });
             task::spawn(async move {
                 loop {
                     let now = Instant::now();
@@ -88,14 +107,11 @@ impl TransportEventHandler for MySH {
 
                     let c = count.swap(0, Ordering::Relaxed);
                     if c > 0 {
-                        let interval = 1_000_000.0 / elapsed;
-                        println!(
-                            "session,{},throughput,{},{},{}",
-                            scenario,
-                            name,
-                            payload,
-                            (c as f64 / interval).floor() as usize
-                        );
+                        let interval = elapsed / 1_000_000.0;
+                        let mps = c as f64 / interval;
+                        let mmps = mps / 1_000_000.0;
+                        let gbps = (mps * payload as f64 * 8.) as f64 / 1_000_000_000.0;
+                        println!("Payload: {payload} bytes, {mmps:.2} Mmsg/s, {gbps:.2} Gbit/s");
                     }
                 }
             });

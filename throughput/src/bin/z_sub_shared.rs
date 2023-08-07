@@ -46,6 +46,11 @@ struct Opt {
     /// number of duplications
     #[clap(short, long, default_value="1")]
     num: usize,
+
+    // make "test/thr" become "test/thr/1, ..., test/thr/n"
+    #[clap(short, long, default_value="false")]
+    indexed_keyexpr: bool,
+
 }
 
 const KEY_EXPR: &str = "test/thr";
@@ -63,6 +68,7 @@ async fn main() -> Result<()> {
         payload,
         config,
         num,
+        indexed_keyexpr,
     } = Opt::parse();
 
     let config = {
@@ -94,15 +100,19 @@ async fn main() -> Result<()> {
     };
 
     let messages = Arc::new(AtomicUsize::new(0));
-    // let c_messages = messages.clone();
 
     let session = zenoh::open(config).res().await.unwrap();
 
     let mut sub_list = vec![];
-    for _ in 0..num {
+    for idx in 0..num {
         let messages = messages.clone();
+        let keyexpr = if indexed_keyexpr {
+            format!("{}/{}", KEY_EXPR, idx)
+        } else {
+            KEY_EXPR.to_string()
+        };
         sub_list.push(session
-            .declare_subscriber(KEY_EXPR)
+            .declare_subscriber(keyexpr)
             .callback_mut(move |_| {
                 messages.fetch_add(1, Ordering::Relaxed);
             })

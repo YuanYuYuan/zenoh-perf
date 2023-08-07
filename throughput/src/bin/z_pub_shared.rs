@@ -12,12 +12,11 @@
 //   ZettaScale Zenoh Team, <zenoh@zettascale.tech>
 //
 use clap::Parser;
-use std::{
-    path::PathBuf,
-};
+use std::path::PathBuf;
 use std::thread;
 use zenoh::prelude::{sync::*, CongestionControl};
 use zenoh::{config::{Config, EndPoint, WhatAmI}, prelude::Value};
+use zenoh::Result;
 
 #[derive(Debug, Parser)]
 #[clap(name = "zenoh_pub_thr")]
@@ -43,11 +42,16 @@ struct Opt {
     /// number of duplications
     #[clap(short, long, default_value="1")]
     num: usize,
+
+    // make "test/thr" become "test/thr/1, ..., test/thr/n"
+    #[clap(short, long, default_value="false")]
+    indexed_keyexpr: bool,
+
 }
 
 const KEY_EXPR: &str = "test/thr";
 
-fn main() {
+fn main() -> Result<()> {
     // Initiate logging
     env_logger::init();
 
@@ -59,10 +63,11 @@ fn main() {
         payload,
         config,
         num,
+        indexed_keyexpr,
     } = Opt::parse();
     let config = {
         let mut config: Config = if let Some(path) = config {
-            Config::from_file(path).unwrap()
+            Config::from_file(path)?
         } else {
             Config::default()
         };
@@ -97,16 +102,20 @@ fn main() {
         .collect::<Vec<u8>>()
         .into();
 
-    let session = zenoh::open(config).res().unwrap().into_arc();
+    let session = zenoh::open(config).res()?.into_arc();
 
-    for _ in 0..num {
-        let data = data.clone();
+    for idx in 0..num {
+        let keyexpr = if indexed_keyexpr {
+            format!("{}/{}", KEY_EXPR, idx)
+        } else {
+            KEY_EXPR.to_string()
+        };
         let publisher = session
             .clone()
-            .declare_publisher(KEY_EXPR)
+            .declare_publisher(keyexpr)
             .congestion_control(CongestionControl::Block)
-            .res()
-            .unwrap();
+            .res()?;
+        let data = data.clone();
         thread::spawn(move || loop {
             publisher.put(data.clone()).res().unwrap();
         });
@@ -114,4 +123,5 @@ fn main() {
 
     std::thread::park();
 
+    Ok(())
 }

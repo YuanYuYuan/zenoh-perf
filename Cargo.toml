@@ -21,10 +21,10 @@ members = [
 
 [profile.release]
 debug=true
-# lto="fat"
-# codegen-units=1
-# opt-level=3
-# panic="abort"
+lto="fat"
+codegen-units=1
+opt-level=3
+panic="abort"
 
 [workspace.dependencies]
 async-std = { version = "1.12.0", features = ["unstable"] }

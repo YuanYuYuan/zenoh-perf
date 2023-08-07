@@ -15,6 +15,7 @@
 
 members = [
     "throughput",
+    "comparison/zenoh",
     "query"
 ]
 

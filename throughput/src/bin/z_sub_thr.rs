@@ -40,7 +40,7 @@ struct Opt {
     payload: usize,
 
     /// configuration file (json5 or yaml)
-    #[clap(long = "conf", value_parser)]
+    #[clap(long, value_parser)]
     config: Option<PathBuf>,
 }
 

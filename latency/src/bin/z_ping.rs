@@ -39,7 +39,7 @@ struct Opt {
     interval: f64,
 
     /// configuration file (json5 or yaml)
-    #[clap(long = "conf", value_parser)]
+    #[clap(long, value_parser)]
     config: Option<PathBuf>,
 }
 

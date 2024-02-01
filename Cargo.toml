@@ -44,12 +44,12 @@ hex = "0.4.3"
 serde = "1.0.155"
 serde_json = "1.0.94"
 
-zenoh                = { git = "https://github.com/yuanyuyuan/zenoh.git", branch = "PR/tokio-porting", default-features = false, features = ["unstable", "transport_tcp", "transport_udp"] }
-zenoh-buffers        = { git = "https://github.com/yuanyuyuan/zenoh.git", branch = "PR/tokio-porting"}
-zenoh-codec          = { git = "https://github.com/yuanyuyuan/zenoh.git", branch = "PR/tokio-porting"}
-zenoh-config         = { git = "https://github.com/yuanyuyuan/zenoh.git", branch = "PR/tokio-porting"}
-zenoh-core           = { git = "https://github.com/yuanyuyuan/zenoh.git", branch = "PR/tokio-porting"}
-zenoh-link           = { git = "https://github.com/yuanyuyuan/zenoh.git", branch = "PR/tokio-porting"}
-zenoh-protocol       = { git = "https://github.com/yuanyuyuan/zenoh.git", branch = "PR/tokio-porting"}
-zenoh-transport      = { git = "https://github.com/yuanyuyuan/zenoh.git", branch = "PR/tokio-porting"}
-zenoh-util           = { git = "https://github.com/yuanyuyuan/zenoh.git", branch = "PR/tokio-porting"}
+zenoh                = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main", default-features = false, features = ["unstable", "transport_tcp", "transport_udp"] }
+zenoh-buffers        = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main"}
+zenoh-codec          = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main"}
+zenoh-config         = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main"}
+zenoh-core           = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main"}
+zenoh-link           = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main"}
+zenoh-protocol       = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main"}
+zenoh-transport      = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main"}
+zenoh-util           = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "main"}

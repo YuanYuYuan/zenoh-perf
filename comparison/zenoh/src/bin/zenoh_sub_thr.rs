@@ -11,7 +11,7 @@
 // Contributors:
 //   ZettaScale Zenoh Team, <zenoh@zettascale.tech>
 //
-use async_std::{sync::Arc, task};
+use std::sync::Arc;
 use clap::Parser;
 use std::{
     path::PathBuf,
@@ -46,7 +46,7 @@ struct Opt {
 
 const KEY_EXPR: &str = "test/thr";
 
-#[async_std::main]
+#[tokio::main]
 async fn main() {
     // initiate logging
     env_logger::init();
@@ -108,7 +108,7 @@ async fn main() {
 async fn measure(messages: Arc<AtomicUsize>, payload: usize) {
     let mut timer = Instant::now();
     loop {
-        task::sleep(Duration::from_secs(1)).await;
+        tokio::time::sleep(Duration::from_secs(1)).await;
 
         if messages.load(Ordering::Relaxed) > 0 {
             let elapsed = timer.elapsed().as_micros() as f64;

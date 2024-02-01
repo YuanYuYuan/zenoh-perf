@@ -12,12 +12,12 @@
 #   ZettaScale Zenoh Team, <zenoh@zettascale.tech>
 #
 [workspace]
-
 members = [
     "throughput",
     "comparison/zenoh",
     "query"
 ]
+resolver = "2"
 
 [profile.release]
 debug=true
@@ -27,10 +27,11 @@ opt-level=3
 panic="abort"
 
 [workspace.dependencies]
+tokio = { version = "1.35.1", features = ["time", "rt-multi-thread", "macros"]}
 async-std = { version = "1.12.0", features = ["unstable"] }
 async-trait = "0.1.66"
 clap = { version = "4.1.8", features = ["derive"] }
-env_logger = "0.10.0"
+env_logger = "0.11.1"
 futures = "0.3.26"
 git-version = "0.3.5"
 json5 = "0.4.1"
@@ -42,6 +43,7 @@ structopt = "0.3.26"
 hex = "0.4.3"
 serde = "1.0.155"
 serde_json = "1.0.94"
+
 zenoh                = { git = "https://github.com/yuanyuyuan/zenoh.git", branch = "PR/tokio-porting", default-features = false, features = ["unstable", "transport_tcp", "transport_udp"] }
 zenoh-buffers        = { git = "https://github.com/yuanyuyuan/zenoh.git", branch = "PR/tokio-porting"}
 zenoh-codec          = { git = "https://github.com/yuanyuyuan/zenoh.git", branch = "PR/tokio-porting"}

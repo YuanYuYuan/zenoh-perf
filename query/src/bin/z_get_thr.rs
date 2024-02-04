@@ -11,8 +11,7 @@
 // Contributors:
 //   ADLINK zenoh team, <zenoh@adlink-labs.tech>
 //
-use async_std::sync::Arc;
-use async_std::task;
+use std::sync::Arc;
 use clap::Parser;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -49,7 +48,7 @@ struct Opt {
     config: Option<PathBuf>,
 }
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> Result<()> {
     // initiate logging
     env_logger::init();
@@ -101,10 +100,10 @@ async fn main() -> Result<()> {
 
     let c_rtt = rtt.clone();
     let c_counter = counter.clone();
-    task::spawn(async move {
+    tokio::task::spawn(async move {
         loop {
             let now = Instant::now();
-            task::sleep(Duration::from_secs(1)).await;
+            tokio::time::sleep(Duration::from_secs(1)).await;
             let elapsed = now.elapsed().as_micros() as f64;
 
             let r = c_rtt.swap(0, Ordering::Relaxed);

@@ -41,7 +41,7 @@ struct Opt {
     config: Option<PathBuf>,
 }
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> Result<()> {
     // initiate logging
     env_logger::init();

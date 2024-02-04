@@ -30,7 +30,7 @@ description = "Zenoh: Zero Overhead Pub/sub, Store/Query and Compute."
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-async-std           = { workspace = true }
+tokio               = { workspace = true }
 async-trait         = { workspace = true }
 clap                = { workspace = true }
 env_logger          = { workspace = true }

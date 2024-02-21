@@ -44,7 +44,7 @@ hex = "0.4.3"
 serde = "1.0.155"
 serde_json = "1.0.94"
 
-zenoh                = { git = "https://github.com/yuanyuyuan/zenoh.git", branch = "PR/tokio-porting", default-features = false, features = ["unstable", "transport_tcp", "transport_udp"] }
+zenoh                = { git = "https://github.com/yuanyuyuan/zenoh.git", branch = "PR/tokio-porting"}
 zenoh-buffers        = { git = "https://github.com/yuanyuyuan/zenoh.git", branch = "PR/tokio-porting"}
 zenoh-codec          = { git = "https://github.com/yuanyuyuan/zenoh.git", branch = "PR/tokio-porting"}
 zenoh-config         = { git = "https://github.com/yuanyuyuan/zenoh.git", branch = "PR/tokio-porting"}
